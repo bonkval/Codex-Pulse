@@ -79,7 +79,12 @@ body {
 .mini-view:focus-visible { border-radius: 14px; box-shadow: inset 0 0 0 2px var(--accent); }
 .mini-logo { width: 28px; height: 28px; display: block; color: #252525; fill: currentColor; transform: translateY(-1px); }
 
-body[data-view="mini"] .card { padding: 0; border-radius: 14px; }
+body[data-view="mini"] .card {
+  padding: 0;
+  border-radius: 14px;
+  clip-path: inset(0 round 14px);
+  box-shadow: 0 5px 14px rgba(0,0,0,.24), inset 0 0 0 1px rgba(255,255,255,.12);
+}
 body[data-view="mini"] .topbar,
 body[data-view="mini"] .usage-stack,
 body[data-view="mini"] .footer { display: none; }
