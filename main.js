@@ -12,6 +12,7 @@ let popup;
 let tray;
 let pollTimer;
 let isQuitting = false;
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function createTrayIcon() {
   return nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png'));
@@ -194,6 +195,16 @@ function positionPopup() {
   popup.setPosition(x + width - WINDOW_WIDTH - EDGE_GAP, y + height - WINDOW_HEIGHT - EDGE_GAP, false);
 }
 
+function showPopup() {
+  if (!popup || popup.isDestroyed()) return;
+  positionPopup();
+  app.focus({ steal: true });
+  popup.setAlwaysOnTop(true, 'screen-saver');
+  popup.show();
+  popup.focus();
+  popup.moveTop();
+}
+
 function createWindow() {
   popup = new BrowserWindow({
     width: WINDOW_WIDTH,
@@ -216,17 +227,14 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  popup.setAlwaysOnTop(true, 'floating');
+  popup.setAlwaysOnTop(true, 'screen-saver');
   popup.loadFile(path.join(__dirname, 'index.html'));
   const revealPopup = () => {
     if (popup.isDestroyed() || process.argv.includes('--hidden')) return;
-    positionPopup();
-    popup.show();
-    popup.focus();
+    showPopup();
   };
   if (!process.argv.includes('--hidden')) {
-    positionPopup();
-    popup.show();
+    showPopup();
   }
   popup.once('ready-to-show', revealPopup);
   popup.webContents.once('did-finish-load', () => setTimeout(revealPopup, 80));
@@ -245,10 +253,10 @@ function createTray() {
   tray.setToolTip('Codex Pulse');
   tray.on('click', () => {
     if (popup.isVisible()) popup.hide();
-    else { positionPopup(); popup.showInactive(); }
+    else showPopup();
   });
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Show Codex Pulse', click: () => { positionPopup(); popup.showInactive(); } },
+    { label: 'Show Codex Pulse', click: () => showPopup() },
     { label: 'Refresh usage', click: () => popup.webContents.send('usage:refresh') },
     { type: 'separator' },
     { label: 'Open Codex', click: () => shell.openExternal('https://chatgpt.com/codex') },
@@ -258,13 +266,21 @@ function createTray() {
   ]));
 }
 
+if (!hasSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    showPopup();
+  });
+}
+
 app.whenReady().then(() => {
   app.setAppUserModelId('com.codexpulse.desktop');
   createWindow();
   createTray();
   ipcMain.handle('usage:read', () => usageClient.readUsage());
   ipcMain.handle('app:hide', () => popup.hide());
-  ipcMain.handle('app:show', () => { positionPopup(); popup.showInactive(); });
+  ipcMain.handle('app:show', () => showPopup());
   ipcMain.handle('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
   ipcMain.handle('app:quit', () => { isQuitting = true; app.quit(); });
   app.setLoginItemSettings({ openAtLogin: true });
