@@ -5,7 +5,7 @@ const path = require('node:path');
 
 const WINDOW_WIDTH = 368;
 const WINDOW_HEIGHT = 286;
-const MINI_SIZE = 64;
+const MINI_SIZE = 48;
 const LOGO_ANCHOR_X = 22;
 const LOGO_ANCHOR_Y = 22;
 const LOGO_MARK_SIZE = 39;
