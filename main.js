@@ -4,9 +4,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
 
-const WINDOW_WIDTH = 368;
-const WINDOW_HEIGHT = 286;
-const MINI_SIZE = 48;
+const WINDOW_WIDTH = 420;
+const WINDOW_HEIGHT = 620;
+const MINI_WIDTH = 48;
+const MINI_HEIGHT = 48;
+const PET_WIDTH = 240;
+const PET_HEIGHT = 118;
 const LOGO_ANCHOR_X = 22;
 const LOGO_ANCHOR_Y = 22;
 const LOGO_MARK_SIZE = 39;
@@ -18,6 +21,8 @@ const DEFAULT_SETTINGS = {
   theme: 'system',
   notificationsEnabled: true,
   quietMode: false,
+  dailyTokenTarget: 0,
+  petEnabled: true,
   position: null,
 };
 
@@ -29,11 +34,56 @@ let isQuitting = false;
 let isMinimized = false;
 let expandedBounds = null;
 let settings = { ...DEFAULT_SETTINGS };
+let usageHistory = { daily: [], snapshots: [] };
+let petExpanded = false;
+let petUnread = false;
+let miniAnchor = null;
+let currentActivity = { state: 'idle', text: 'Waiting for Codex' };
 let latestUpdateState = { status: 'checking' };
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function settingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
+}
+
+function historyPath() {
+  return path.join(app.getPath('userData'), 'usage-history.json');
+}
+
+function loadHistory() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(historyPath(), 'utf8'));
+    usageHistory = {
+      daily: Array.isArray(saved.daily) ? saved.daily.filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && Number.isFinite(Number(entry.tokens))) : [],
+      snapshots: Array.isArray(saved.snapshots) ? saved.snapshots.filter((entry) => entry && Number.isFinite(Number(entry.timestamp))) : [],
+    };
+  } catch (_) {
+    usageHistory = { daily: [], snapshots: [] };
+  }
+}
+
+function saveHistory() {
+  fs.mkdirSync(app.getPath('userData'), { recursive: true });
+  fs.writeFileSync(historyPath(), JSON.stringify(usageHistory, null, 2));
+}
+
+function mergeDailyHistory(buckets) {
+  if (!Array.isArray(buckets)) return;
+  const byDate = new Map(usageHistory.daily.map((entry) => [entry.date, entry]));
+  for (const bucket of buckets) {
+    if (!bucket || !/^\d{4}-\d{2}-\d{2}$/.test(bucket.startDate) || !Number.isFinite(Number(bucket.tokens))) continue;
+    byDate.set(bucket.startDate, { date: bucket.startDate, tokens: Math.max(0, Number(bucket.tokens)) });
+  }
+  usageHistory.daily = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90);
+}
+
+function addUsageSnapshot(primary, secondary) {
+  usageHistory.snapshots.push({
+    timestamp: Date.now(),
+    primaryUsed: Number.isFinite(Number(primary?.usedPercent)) ? Number(primary.usedPercent) : null,
+    secondaryUsed: Number.isFinite(Number(secondary?.usedPercent)) ? Number(secondary.usedPercent) : null,
+  });
+  usageHistory.snapshots = usageHistory.snapshots.filter((entry) => entry.timestamp > Date.now() - 7 * 24 * 60 * 60 * 1000).slice(-1000);
 }
 
 function loadSettings() {
@@ -44,6 +94,7 @@ function loadSettings() {
       ...saved,
       refreshInterval: [15, 30, 60].includes(Number(saved.refreshInterval)) ? Number(saved.refreshInterval) : DEFAULT_SETTINGS.refreshInterval,
       theme: ['system', 'light', 'dark'].includes(saved.theme) ? saved.theme : DEFAULT_SETTINGS.theme,
+      dailyTokenTarget: Number.isFinite(Number(saved.dailyTokenTarget)) ? Math.max(0, Math.min(1000000000, Math.round(Number(saved.dailyTokenTarget)))) : DEFAULT_SETTINGS.dailyTokenTarget,
       position: saved.position && Number.isFinite(Number(saved.position.x)) && Number.isFinite(Number(saved.position.y))
         ? { x: Number(saved.position.x), y: Number(saved.position.y) }
         : null,
@@ -66,6 +117,11 @@ function updateSettings(patch) {
   if (['system', 'light', 'dark'].includes(patch.theme)) settings.theme = patch.theme;
   if (typeof patch.notificationsEnabled === 'boolean') settings.notificationsEnabled = patch.notificationsEnabled;
   if (typeof patch.quietMode === 'boolean') settings.quietMode = patch.quietMode;
+  if (typeof patch.petEnabled === 'boolean') settings.petEnabled = patch.petEnabled;
+  if (Object.prototype.hasOwnProperty.call(patch, 'dailyTokenTarget')) {
+    if (patch.dailyTokenTarget === '' || patch.dailyTokenTarget === null || patch.dailyTokenTarget === undefined) settings.dailyTokenTarget = 0;
+    else if (Number.isFinite(Number(patch.dailyTokenTarget))) settings.dailyTokenTarget = Math.max(0, Math.min(1000000000, Math.round(Number(patch.dailyTokenTarget))));
+  }
   saveSettings();
   return { ...settings };
 }
@@ -76,7 +132,7 @@ function commitSettings(patch) {
   if (previous.launchAtStartup !== next.launchAtStartup) applyStartupSetting();
   if (previous.refreshInterval !== next.refreshInterval) startPolling();
   if (previous.codexPath !== next.codexPath) usageClient.stop();
-  if (next.quietMode && !previous.quietMode && popup && !popup.isDestroyed()) popup.hide();
+  if (previous.petEnabled !== next.petEnabled) setPetExpanded(next.petEnabled && currentActivity.state !== 'idle');
   return next;
 }
 
@@ -96,12 +152,20 @@ function schedulePositionSave() {
   positionSaveTimer = setTimeout(() => {
     if (!popup || popup.isDestroyed()) return;
     const bounds = expandedBounds || popup.getBounds();
+    if (isMinimized && miniAnchor) {
+      settings.position = {
+        x: Math.round(miniAnchor.x - LOGO_ANCHOR_X - (LOGO_MARK_SIZE - MINI_WIDTH) / 2),
+        y: Math.round(miniAnchor.y - LOGO_ANCHOR_Y - (LOGO_MARK_SIZE - MINI_HEIGHT) / 2),
+      };
+      saveSettings();
+      return;
+    }
     settings.position = { x: bounds.x, y: bounds.y };
     saveSettings();
   }, 250);
 }
 
-function updateTrayTooltip(data) {
+function legacyTrayTooltip(data) {
   if (!tray || tray.isDestroyed()) return;
   const primaryValue = data?.primary === null || data?.primary === undefined || data?.primary === '' ? null : Number(data.primary);
   const secondaryValue = data?.secondary === null || data?.secondary === undefined || data?.secondary === '' ? null : Number(data.secondary);
@@ -110,8 +174,24 @@ function updateTrayTooltip(data) {
   tray.setToolTip(`Codex Pulse · 5-hour ${primary} remaining · weekly ${secondary} remaining`);
 }
 
+function updateTrayTooltip(data) {
+  if (!tray || tray.isDestroyed()) return;
+  const primary = Number.isFinite(Number(data?.primary)) ? `${Math.round(Number(data.primary))}%` : '-';
+  const secondary = Number.isFinite(Number(data?.secondary)) ? `${Math.round(Number(data.secondary))}%` : '-';
+  const today = Number.isFinite(Number(data?.todayTokens)) ? `${Math.round(Number(data.todayTokens)).toLocaleString()} tokens` : '-';
+  tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}`);
+}
+
 function showUsageNotification(data) {
   if (!settings.notificationsEnabled || !Notification.isSupported()) return false;
+  if (data?.kind === 'token-target') {
+    new Notification({ title: 'Codex daily target reached', body: `Today\'s token activity reached ${Number(data.target).toLocaleString()} tokens.`, silent: true }).show();
+    return true;
+  }
+  if (data?.kind === 'rate-reset') {
+    new Notification({ title: 'Codex limit reset', body: `${data.label || 'A usage window'} is available again.`, silent: true }).show();
+    return true;
+  }
   const primary = data?.primary === null || data?.primary === undefined || data?.primary === '' ? null : Number(data.primary);
   const secondary = data?.secondary === null || data?.secondary === undefined || data?.secondary === '' ? null : Number(data.secondary);
   const windows = [
@@ -163,13 +243,13 @@ async function checkForUpdates() {
 
 function isPositionVisible(x, y) {
   return screen.getAllDisplays().some(({ workArea }) => (
-    x < workArea.x + workArea.width && x + MINI_SIZE > workArea.x
-      && y < workArea.y + workArea.height && y + MINI_SIZE > workArea.y
+    x < workArea.x + workArea.width && x + MINI_WIDTH > workArea.x
+      && y < workArea.y + workArea.height && y + MINI_HEIGHT > workArea.y
   ));
 }
 
 function clampPosition(x, y) {
-  const display = screen.getDisplayMatching({ x, y, width: MINI_SIZE, height: MINI_SIZE });
+  const display = screen.getDisplayMatching({ x, y, width: MINI_WIDTH, height: MINI_HEIGHT });
   const { workArea } = display;
   return {
     x: Math.max(workArea.x + EDGE_GAP, Math.min(x, workArea.x + workArea.width - WINDOW_WIDTH - EDGE_GAP)),
@@ -225,6 +305,46 @@ function resolveCodexCommand() {
   return 'codex';
 }
 
+function activityTextForItem(item) {
+  const type = item?.type || '';
+  if (type === 'commandExecution') return 'Running a command...';
+  if (type === 'fileChange') return 'Updating your files...';
+  if (type === 'reasoning') return 'Thinking through it...';
+  if (type === 'plan') return 'Planning the next steps...';
+  if (type === 'agentMessage') return 'Writing a response...';
+  if (type.toLowerCase().includes('search')) return 'Searching for context...';
+  if (type === 'enteredReviewMode') return 'Reviewing your changes...';
+  return 'Working on your code...';
+}
+
+function setActivity(next) {
+  const previous = currentActivity;
+  currentActivity = { ...currentActivity, ...next, updatedAt: Date.now() };
+  if (currentActivity.state === 'done' && previous.state !== 'done') petUnread = true;
+  if (popup && !popup.isDestroyed() && !popup.webContents.isLoading()) popup.webContents.send('pet:activity', currentActivity);
+  setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
+}
+
+function setPetExpanded(expanded) {
+  if (!popup || popup.isDestroyed() || !isMinimized) return;
+  const next = Boolean(expanded && settings.petEnabled);
+  if (petExpanded === next) return;
+  petExpanded = next;
+  const anchor = miniAnchor || popup.getBounds();
+  if (petExpanded) {
+    popup.setBounds({ x: Math.round(anchor.x - (PET_WIDTH - MINI_WIDTH) / 2), y: Math.round(anchor.y - (PET_HEIGHT - MINI_HEIGHT)), width: PET_WIDTH, height: PET_HEIGHT }, false);
+  } else {
+    popup.setBounds({ x: anchor.x, y: anchor.y, width: MINI_WIDTH, height: MINI_HEIGHT }, false);
+  }
+  if (!popup.webContents.isLoading()) popup.webContents.send('pet:expanded', petExpanded);
+}
+
+function clearPetNotification() {
+  petUnread = false;
+  if (currentActivity.state === 'done') currentActivity = { state: 'idle', text: 'Waiting for Codex', updatedAt: Date.now() };
+  setPetExpanded(false);
+}
+
 class CodexUsageClient {
   constructor() {
     this.child = null;
@@ -233,6 +353,7 @@ class CodexUsageClient {
     this.pending = new Map();
     this.startPromise = null;
     this.ready = false;
+    this.latestTokenUsage = null;
   }
 
   async start() {
@@ -270,6 +391,12 @@ class CodexUsageClient {
           if (!line.trim()) continue;
           try {
             const message = JSON.parse(line);
+            if (message.method === 'turn/started') setActivity({ state: 'working', text: 'Starting a Codex turn...', threadId: message.params?.turn?.id || null });
+            if (message.method === 'item/started') setActivity({ state: 'working', text: activityTextForItem(message.params?.item), threadId: message.params?.threadId || null });
+            if (message.method === 'turn/completed') setActivity({ state: 'done', text: message.params?.turn?.status === 'failed' ? 'Codex finished with an error.' : 'Codex finished the task.' });
+            if (message.method === 'thread/tokenUsage/updated') {
+              this.latestTokenUsage = message.params || null;
+            }
             if (message.id && this.pending.has(message.id)) {
               const request = this.pending.get(message.id);
               this.pending.delete(message.id);
@@ -341,19 +468,59 @@ class CodexUsageClient {
     });
   }
 
+  async readActivity() {
+    const result = await this.request('thread/list', {
+      limit: 25,
+      sortKey: 'updated_at',
+      sortDirection: 'desc',
+      sourceKinds: ['vscode', 'cli'],
+    }).catch(() => null);
+    const active = result?.data?.find((thread) => thread?.status?.type === 'active');
+    if (active) {
+      const flags = active.status.activeFlags || [];
+      let text = 'Working on your code...';
+      if (flags.includes('waitingOnApproval')) text = 'Waiting for your approval...';
+      else if (flags.includes('waitingOnUserInput')) text = 'Waiting for your input...';
+      if (currentActivity.state !== 'working' || currentActivity.source === 'thread-list' || currentActivity.threadId !== active.id) {
+        setActivity({ state: 'working', text, threadId: active.id, preview: active.preview || active.name || '', source: 'thread-list' });
+      }
+    } else if (currentActivity.state === 'working' && currentActivity.source === 'thread-list') {
+      setActivity({ state: 'done', text: 'Codex finished the task.', source: 'thread-list' });
+    }
+    return currentActivity;
+  }
+
   async readUsage() {
     try {
       await this.start();
       const result = await this.request('account/rateLimits/read');
       const snapshot = result?.rateLimitsByLimitId?.codex || result?.rateLimits;
       if (!snapshot) throw new Error('Codex did not return a usage snapshot');
+      const [tokenResult, accountResult] = await Promise.all([
+        this.request('account/usage/read').catch(() => null),
+        this.request('account/read', { refreshToken: false }).catch(() => null),
+      ]);
+      const activity = await this.readActivity();
+      mergeDailyHistory(tokenResult?.dailyUsageBuckets);
+      addUsageSnapshot(snapshot.primary, snapshot.secondary);
+      saveHistory();
       return {
         ok: true,
         primary: snapshot.primary || null,
         secondary: snapshot.secondary || null,
-        planType: snapshot.planType || null,
+        planType: snapshot.planType || accountResult?.account?.planType || null,
         credits: snapshot.credits || null,
         ordinaryUsageAllowed: result.ordinaryUsageAllowed,
+        rateLimitReachedType: snapshot.rateLimitReachedType || null,
+        resetCredits: result.rateLimitResetCredits || null,
+        tokenActivity: tokenResult?.summary || null,
+        dailyUsageBuckets: tokenResult?.dailyUsageBuckets || null,
+        localHistory: usageHistory.daily,
+        snapshots: usageHistory.snapshots,
+        liveSession: this.latestTokenUsage,
+        activity,
+        account: accountResult?.account || null,
+        accountAuthRequired: accountResult?.requiresOpenaiAuth ?? null,
         updatedAt: Date.now(),
       };
     } catch (error) {
@@ -410,12 +577,11 @@ function setPopupView(minimized) {
   isMinimized = minimized;
   if (minimized) {
     expandedBounds = bounds;
-    popup.setBounds({
-      x: Math.round(bounds.x + LOGO_ANCHOR_X + (LOGO_MARK_SIZE - MINI_SIZE) / 2),
-      y: Math.round(bounds.y + LOGO_ANCHOR_Y + (LOGO_MARK_SIZE - MINI_SIZE) / 2),
-      width: MINI_SIZE,
-      height: MINI_SIZE,
-    }, false);
+    miniAnchor = {
+      x: Math.round(bounds.x + LOGO_ANCHOR_X + (LOGO_MARK_SIZE - MINI_WIDTH) / 2),
+      y: Math.round(bounds.y + LOGO_ANCHOR_Y + (LOGO_MARK_SIZE - MINI_HEIGHT) / 2),
+    };
+    popup.setBounds({ ...miniAnchor, width: MINI_WIDTH, height: MINI_HEIGHT }, false);
   } else {
     const restoreBounds = expandedBounds || bounds;
     popup.setBounds({
@@ -425,9 +591,13 @@ function setPopupView(minimized) {
       height: WINDOW_HEIGHT,
     }, false);
     expandedBounds = null;
+    miniAnchor = null;
+    petExpanded = false;
+    petUnread = false;
   }
   schedulePositionSave();
   popup.webContents.send('window:view', minimized ? 'mini' : 'full');
+  if (minimized) setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
   showPopup();
 }
 
@@ -435,9 +605,9 @@ function createWindow() {
   popup = new BrowserWindow({
     width: WINDOW_WIDTH,
     height: WINDOW_HEIGHT,
-    minWidth: MINI_SIZE,
+    minWidth: MINI_WIDTH,
     maxWidth: WINDOW_WIDTH,
-    minHeight: MINI_SIZE,
+    minHeight: MINI_HEIGHT,
     maxHeight: WINDOW_HEIGHT,
     frame: false,
     transparent: true,
@@ -505,6 +675,7 @@ if (!hasSingleInstanceLock) {
 
 app.whenReady().then(() => {
   loadSettings();
+  loadHistory();
   applyStartupSetting();
   app.setAppUserModelId('com.codexpulse.desktop');
   createWindow();
@@ -532,11 +703,28 @@ app.whenReady().then(() => {
     positionPopup();
     return { ...settings };
   });
+  ipcMain.handle('history:export', async (_event, format = 'json') => {
+    const extension = format === 'csv' ? 'csv' : 'json';
+    const result = await dialog.showSaveDialog(popup, {
+      title: 'Export Codex usage history',
+      defaultPath: path.join(app.getPath('downloads'), `codex-pulse-history.${extension}`),
+      filters: [{ name: extension.toUpperCase() + ' file', extensions: [extension] }],
+    });
+    if (result.canceled || !result.filePath) return { canceled: true };
+    const daily = usageHistory.daily;
+    const content = extension === 'csv'
+      ? ['date,tokens', ...daily.map((entry) => `${entry.date},${entry.tokens}`)].join('\n')
+      : JSON.stringify({ exportedAt: new Date().toISOString(), daily }, null, 2);
+    fs.writeFileSync(result.filePath, content, 'utf8');
+    return { canceled: false, path: result.filePath };
+  });
   ipcMain.handle('tray:update', (_event, data) => {
     updateTrayTooltip(data);
     return true;
   });
   ipcMain.handle('notifications:show', (_event, data) => showUsageNotification(data));
+  ipcMain.handle('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });
+  ipcMain.handle('pet:clear', () => { clearPetNotification(); return true; });
   ipcMain.handle('app:check-updates', () => checkForUpdates());
   ipcMain.handle('app:download-update', async () => {
     if (!app.isPackaged) return false;
@@ -553,6 +741,10 @@ app.whenReady().then(() => {
     if (isMinimized) expandedBounds = null;
     const [x, y] = popup.getPosition();
     popup.setPosition(Math.round(x + Number(delta.dx || 0)), Math.round(y + Number(delta.dy || 0)), false);
+    if (isMinimized && miniAnchor) {
+      miniAnchor.x += Math.round(Number(delta.dx || 0));
+      miniAnchor.y += Math.round(Number(delta.dy || 0));
+    }
     schedulePositionSave();
   });
   startPolling();

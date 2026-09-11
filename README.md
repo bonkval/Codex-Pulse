@@ -20,15 +20,22 @@ Codex Pulse opens automatically as a small popup. No PowerShell or terminal comm
 - Shows remaining usage for the rolling 5-hour limit.
 - Shows remaining usage for the 7-day weekly limit.
 - Syncs usage from your local Codex login.
+- Shows token activity for today, the last 7 days, and your lifetime account total when Codex provides it.
+- Includes daily token history with 7-day and 30-day views, highest-day and average-use summaries.
+- Shows live session token counts when the Codex app-server sends active-thread updates.
+- Provides an estimate of when a usage window may be exhausted based on recent activity.
 - Refreshes usage automatically every 30 seconds and includes a manual refresh button.
-- Sends optional notifications when usage reaches 25%, 10%, or 5% remaining.
+- Sends optional notifications for low limits, daily token targets, and rate-limit resets.
 - Shows healthy, warning, and critical usage states.
 - Stays available while you code in VS Code or other apps.
 - Can be moved anywhere on the screen.
 - Remembers the popup position across restarts and monitors.
 - Minimizes to a compact floating logo and restores when clicked.
+- Includes an optional Codex Pet companion that types live activity above the minimized logo and shows a completion badge when work finishes.
 - Supports light, dark, and system themes.
 - Includes settings for refresh interval, startup behavior, notifications, quiet mode, and Codex executable selection.
+- Lets you set a daily token target and export locally stored history as JSON or CSV.
+- Shows plan, connection health, last sync time, and available reset credits when provided.
 - Includes a Windows tray icon for showing, hiding, refreshing, opening Codex, and quitting the app.
 - Can be configured to launch with Windows or run quietly in the tray.
 - Checks GitHub Releases for updates and can install them from the app.

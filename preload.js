@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('codexPulse', {
   updateSettings: (patch) => ipcRenderer.invoke('settings:update', patch),
   chooseCodex: () => ipcRenderer.invoke('settings:choose-codex'),
   resetPosition: () => ipcRenderer.invoke('settings:reset-position'),
+  exportHistory: (format) => ipcRenderer.invoke('history:export', format),
+  setPetExpanded: (expanded) => ipcRenderer.invoke('pet:set-expanded', expanded),
+  clearPet: () => ipcRenderer.invoke('pet:clear'),
   updateTray: (data) => ipcRenderer.invoke('tray:update', data),
   showNotification: (data) => ipcRenderer.invoke('notifications:show', data),
   checkForUpdates: () => ipcRenderer.invoke('app:check-updates'),
@@ -21,4 +24,6 @@ contextBridge.exposeInMainWorld('codexPulse', {
   onSettingsOpen: (callback) => ipcRenderer.on('settings:open', callback),
   onUpdate: (callback) => ipcRenderer.on('update:state', (_event, state) => callback(state)),
   onViewChange: (callback) => ipcRenderer.on('window:view', (_event, view) => callback(view)),
+  onPetActivity: (callback) => ipcRenderer.on('pet:activity', (_event, activity) => callback(activity)),
+  onPetExpanded: (callback) => ipcRenderer.on('pet:expanded', (_event, expanded) => callback(Boolean(expanded))),
 });

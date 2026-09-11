@@ -3,19 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#101113" />
+    <meta name="theme-color" content="#e9e8e5" />
     <title>Codex Pulse</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="card" aria-label="Codex usage">
-      <h1 class="sr-only">Codex Pulse usage</h1>
+    <main class="card" aria-label="Codex usage monitor">
+      <h1 class="sr-only">Codex Pulse usage monitor</h1>
       <header class="topbar">
         <div class="brand-lockup">
           <div class="logo-mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" role="img">
-              <path d="M20 4.8a4.5 4.5 0 0 1 4.5 4.5v4.9l4.3-2.5a4.5 4.5 0 1 1 4.5 7.8L29 22l4.3 2.5a4.5 4.5 0 1 1-4.5 7.8l-4.3-2.5v4.9a4.5 4.5 0 1 1-9 0v-4.9l-4.3 2.5a4.5 4.5 0 1 1-4.5-7.8L11 22l-4.3-2.5a4.5 4.5 0 1 1 4.5-7.8l4.3 2.5V9.3A4.5 4.5 0 0 1 20 4.8Z" />
-            </svg>
+            <svg viewBox="0 0 40 40"><path d="M20 4.8a4.5 4.5 0 0 1 4.5 4.5v4.9l4.3-2.5a4.5 4.5 0 1 1 4.5 7.8L29 22l4.3 2.5a4.5 4.5 0 1 1-4.5 7.8l-4.3-2.5v4.9a4.5 4.5 0 1 1-9 0v-4.9l-4.3 2.5a4.5 4.5 0 1 1-4.5-7.8L11 22l-4.3-2.5a4.5 4.5 0 1 1 4.5-7.8l4.3 2.5V9.3A4.5 4.5 0 0 1 20 4.8Z" /></svg>
           </div>
           <div>
             <div class="eyebrow">CODEX PULSE</div>
@@ -23,86 +21,79 @@
           </div>
         </div>
         <div class="actions">
-          <button id="refresh-button" class="icon-button" type="button" aria-label="Refresh usage" title="Refresh usage">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.3 8.2A6.6 6.6 0 0 0 4.1 6.1L2.5 7.7M2.5 7.7V3.9m0 3.8h3.8M3.7 11.8a6.6 6.6 0 0 0 12.2 2.1l1.6-1.6m0 0v3.8m0-3.8h-3.8" /></svg>
-          </button>
-          <button id="theme-button" class="icon-button theme-button" type="button" aria-label="Switch to dark mode" title="Switch to dark mode">
-            <svg class="sun-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.1" /><path d="M10 2.2v2M10 15.8v2M2.2 10h2M15.8 10h2M4.5 4.5l1.4 1.4M14.1 14.1l1.4 1.4M15.5 4.5l-1.4 1.4M5.9 14.1l-1.4 1.4" /></svg>
-            <svg class="moon-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.8 12.8A6.8 6.8 0 0 1 7.2 3.2 6.9 6.9 0 1 0 16.8 12.8Z" /></svg>
-          </button>
-          <button id="settings-button" class="icon-button" type="button" aria-label="Open settings" aria-expanded="false" title="Open settings">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 2.8h3l.6 2a5.5 5.5 0 0 1 1.4.8l2-.6 1.5 2.6-1.5 1.4a5.7 5.7 0 0 1 0 1.7l1.5 1.4-1.5 2.6-2-.6a5.5 5.5 0 0 1-1.4.8l-.6 2h-3l-.6-2a5.5 5.5 0 0 1-1.4-.8l-2 .6L3 12.1l1.5-1.4a5.7 5.7 0 0 1 0-1.7L3 7.6 4.5 5l2 .6a5.5 5.5 0 0 1 1.4-.8l.6-2Z" /><circle cx="10" cy="10" r="2.1" /></svg>
-          </button>
-          <button id="minimize-button" class="icon-button" type="button" aria-label="Minimize to floating logo" title="Minimize to floating logo">
-            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 11.5h12" /></svg>
-          </button>
-          <button id="close-button" class="icon-button close-button" type="button" aria-label="Hide Codex Pulse" title="Hide to tray">×</button>
+          <button id="refresh-button" class="icon-button" type="button" aria-label="Refresh Codex usage now" title="Refresh Codex usage now"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16.3 8.2A6.6 6.6 0 0 0 4.1 6.1L2.5 7.7M2.5 7.7V3.9m0 3.8h3.8M3.7 11.8a6.6 6.6 0 0 0 12.2 2.1l1.6-1.6m0 0v3.8m0-3.8h-3.8" /></svg></button>
+          <button id="theme-button" class="icon-button theme-button" type="button" aria-label="Switch theme" title="Switch between light and dark mode"><svg class="sun-icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.1" /><path d="M10 2.2v2M10 15.8v2M2.2 10h2M15.8 10h2M4.5 4.5l1.4 1.4M14.1 14.1l1.4 1.4M15.5 4.5l-1.4 1.4M5.9 14.1l-1.4 1.4" /></svg><svg class="moon-icon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16.8 12.8A6.8 6.8 0 0 1 7.2 3.2 6.9 6.9 0 1 0 16.8 12.8Z" /></svg></button>
+          <button id="settings-button" class="icon-button" type="button" aria-label="Open settings" aria-expanded="false" title="Open settings and monitoring preferences"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 2.8h3l.6 2a5.5 5.5 0 0 1 1.4.8l2-.6 1.5 2.6-1.5 1.4a5.7 5.7 0 0 1 0 1.7l1.5 1.4-1.5 2.6-2-.6a5.5 5.5 0 0 1-1.4.8l-.6 2h-3l-.6-2a5.5 5.5 0 0 1-1.4-.8l-2 .6L3 12.1l1.5-1.4a5.7 5.7 0 0 1 0-1.7L3 7.6 4.5 5l2 .6a5.5 5.5 0 0 1 1.4-.8l.6-2Z" /><circle cx="10" cy="10" r="2.1" /></svg></button>
+          <button id="minimize-button" class="icon-button" type="button" aria-label="Minimize to floating logo" title="Minimize to a floating logo"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 11.5h12" /></svg></button>
+          <button id="close-button" class="icon-button close-button" type="button" aria-label="Hide Codex Pulse to the tray" title="Hide Codex Pulse to the tray">&times;</button>
         </div>
       </header>
 
-      <section class="usage-stack" aria-live="polite" aria-atomic="false">
-        <article class="usage-row" data-window="primary">
-          <div class="row-heading">
-            <div class="row-label"><span class="window-icon clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.1" /><path d="M8 4.5v3.7l2.3 1.4" /></svg></span><span>5-hour remaining</span></div>
-            <div class="row-value" id="primary-percent">—</div>
-          </div>
-          <div class="track"><div class="fill fill-primary" id="primary-fill"></div></div>
-          <div class="row-meta"><span id="primary-detail">Loading current usage</span><span id="primary-reset">—</span></div>
-        </article>
+      <section class="dashboard-scroll" aria-label="Usage details">
+        <section class="usage-stack" aria-live="polite" aria-atomic="false" aria-label="Remaining rate limits">
+          <article class="usage-row" data-window="primary">
+            <div class="row-heading"><div class="row-label"><span class="window-icon clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.1" /><path d="M8 4.5v3.7l2.3 1.4" /></svg></span><span>5-hour remaining</span></div><div class="row-value" id="primary-percent">&mdash;</div></div>
+            <div class="track"><div class="fill fill-primary" id="primary-fill"></div></div>
+            <div class="row-meta"><span id="primary-detail">Loading current usage</span><span id="primary-reset">&mdash;</span></div>
+          </article>
+          <article class="usage-row" data-window="secondary">
+            <div class="row-heading"><div class="row-label"><span class="window-icon calendar-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="2.3" y="3.6" width="11.4" height="10" rx="1.8" /><path d="M5.2 2.4v3M10.8 2.4v3M2.6 6.6h10.8M5.1 9.2h.1M8 9.2h.1M10.9 9.2h.1M5.1 11.5h.1M8 11.5h.1M10.9 11.5h.1" /></svg></span><span>Weekly remaining</span></div><div class="row-value" id="secondary-percent">&mdash;</div></div>
+            <div class="track"><div class="fill fill-secondary" id="secondary-fill"></div></div>
+            <div class="row-meta"><span id="secondary-detail">Loading current usage</span><span id="secondary-reset">&mdash;</span></div>
+          </article>
+        </section>
 
-        <article class="usage-row" data-window="secondary">
-          <div class="row-heading">
-            <div class="row-label"><span class="window-icon calendar-icon" aria-hidden="true"><svg viewBox="0 0 16 16"><rect x="2.3" y="3.6" width="11.4" height="10" rx="1.8" /><path d="M5.2 2.4v3M10.8 2.4v3M2.6 6.6h10.8M5.1 9.2h.1M8 9.2h.1M10.9 9.2h.1M5.1 11.5h.1M8 11.5h.1M10.9 11.5h.1" /></svg></span><span>Weekly remaining</span></div>
-            <div class="row-value" id="secondary-percent">—</div>
+        <section class="monitor-section" aria-labelledby="token-title">
+          <div class="section-heading"><h2 id="token-title">Token activity</h2><span id="token-range-label">Account totals</span></div>
+          <div class="token-grid">
+            <div class="metric"><strong id="today-tokens">&mdash;</strong><span>Today</span></div>
+            <div class="metric"><strong id="seven-day-tokens">&mdash;</strong><span>Last 7 days</span></div>
+            <div class="metric"><strong id="lifetime-tokens">&mdash;</strong><span>Lifetime</span></div>
+            <div class="metric"><strong id="peak-daily-tokens">&mdash;</strong><span>Peak day</span></div>
+            <div class="metric"><strong id="current-streak">&mdash;</strong><span>Day streak</span></div>
           </div>
-          <div class="track"><div class="fill fill-secondary" id="secondary-fill"></div></div>
-          <div class="row-meta"><span id="secondary-detail">Loading current usage</span><span id="secondary-reset">—</span></div>
-        </article>
+        </section>
+
+        <section class="monitor-section" aria-labelledby="history-title">
+          <div class="section-heading"><h2 id="history-title">Usage history</h2><div class="segmented" role="group" aria-label="Choose history range"><button id="history-seven-button" class="segment-button active" type="button" title="Show the last 7 days of token activity">7D</button><button id="history-thirty-button" class="segment-button" type="button" title="Show the last 30 days of token activity">30D</button></div></div>
+          <div id="history-chart" class="history-chart" role="img" aria-label="Token usage history"></div>
+          <div class="history-stats"><span id="highest-day">Highest day: &mdash;</span><span id="average-day">Average: &mdash;</span></div>
+        </section>
+
+        <section class="monitor-section compact-section" aria-labelledby="session-title">
+          <div class="section-heading"><h2 id="session-title">Live session</h2><span id="session-status">Waiting for an active thread</span></div>
+          <div class="session-grid"><div><strong id="session-total">&mdash;</strong><span>Total</span></div><div><strong id="session-input">&mdash;</strong><span>Input</span></div><div><strong id="session-output">&mdash;</strong><span>Output</span></div><div><strong id="session-reasoning">&mdash;</strong><span>Reasoning</span></div></div>
+        </section>
+
+        <section class="monitor-section compact-section" aria-labelledby="forecast-title">
+          <div class="section-heading"><h2 id="forecast-title">Usage forecast</h2><span class="estimate-badge">Estimate</span></div>
+          <p id="forecast-text" class="forecast-text">Collecting enough usage samples to estimate your pace.</p>
+        </section>
+
+        <section class="monitor-section compact-section" aria-labelledby="account-title">
+          <div class="section-heading"><h2 id="account-title">Account &amp; connection</h2><span id="account-health">Checking</span></div>
+          <div class="account-grid"><span>Plan <strong id="account-plan">&mdash;</strong></span><span>Status <strong id="account-status">&mdash;</strong></span><span>Last sync <strong id="account-sync">&mdash;</strong></span><span>Reset credits <strong id="reset-credits">&mdash;</strong></span></div>
+        </section>
       </section>
 
-      <footer class="footer">
-        <span class="updated"><span class="pulse-ring"></span><span id="updated-label" aria-live="polite">Waiting for Codex</span></span>
-        <div class="footer-actions">
-          <button id="retry-button" class="text-button" type="button" hidden>Retry</button>
-          <button id="codex-button" class="text-button" type="button">Open Codex <span>↗</span></button>
-        </div>
-      </footer>
+      <footer class="footer"><span class="updated"><span class="pulse-ring"></span><span id="updated-label" aria-live="polite">Waiting for Codex</span></span><div class="footer-actions"><button id="retry-button" class="text-button" type="button" title="Try syncing with Codex again" hidden>Retry</button><button id="export-button" class="text-button" type="button" title="Export token history as JSON or CSV">Export</button><button id="codex-button" class="text-button" type="button" title="Open Codex in your browser">Open Codex <span>&rarr;</span></button></div></footer>
 
-      <button id="mini-view" class="mini-view" type="button" aria-label="Restore Codex Pulse">
-        <svg class="mini-logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4.8a4.5 4.5 0 0 1 4.5 4.5v4.9l4.3-2.5a4.5 4.5 0 1 1 4.5 7.8L29 22l4.3 2.5a4.5 4.5 0 1 1-4.5 7.8l-4.3-2.5v4.9a4.5 4.5 0 1 1-9 0v-4.9l-4.3 2.5a4.5 4.5 0 1 1-4.5-7.8L11 22l-4.3-2.5a4.5 4.5 0 1 1 4.5-7.8l4.3 2.5V9.3A4.5 4.5 0 0 1 20 4.8Z" /></svg>
-      </button>
+      <button id="mini-view" class="mini-view" type="button" aria-label="Restore the full Codex Pulse window" title="Restore the full Codex Pulse window"><span id="pet-bubble" class="pet-bubble" hidden><span id="pet-message" aria-live="polite">Waiting for Codex</span></span><span class="mini-shell"><svg class="mini-logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4.8a4.5 4.5 0 0 1 4.5 4.5v4.9l4.3-2.5a4.5 4.5 0 1 1 4.5 7.8L29 22l4.3 2.5a4.5 4.5 0 1 1-4.5 7.8l-4.3-2.5v4.9a4.5 4.5 0 1 1-9 0v-4.9l-4.3 2.5a4.5 4.5 0 1 1-4.5-7.8L11 22l-4.3-2.5a4.5 4.5 0 1 1 4.5-7.8l4.3 2.5V9.3A4.5 4.5 0 0 1 20 4.8Z" /></svg></span><span id="pet-badge" class="pet-badge" hidden>1</span></button>
 
       <section id="settings-panel" class="settings-panel" hidden aria-labelledby="settings-title">
-        <div class="settings-header">
-          <button id="settings-back" class="back-button" type="button" aria-label="Back to usage">‹</button>
-          <h2 id="settings-title">Settings</h2>
-        </div>
+        <div class="settings-header"><button id="settings-back" class="back-button" type="button" aria-label="Return to usage dashboard" title="Return to usage dashboard">&lsaquo;</button><h2 id="settings-title">Settings</h2></div>
         <div class="settings-scroll">
-          <label class="setting-row" for="theme-select">
-            <span><strong>Appearance</strong><small>Choose how Codex Pulse looks</small></span>
-            <select id="theme-select" name="theme">
-              <option value="system">System</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-          <label class="setting-row" for="refresh-select">
-            <span><strong>Refresh interval</strong><small>How often usage is checked</small></span>
-            <select id="refresh-select" name="refreshInterval">
-              <option value="15">15 seconds</option>
-              <option value="30">30 seconds</option>
-              <option value="60">60 seconds</option>
-            </select>
-          </label>
-          <label class="setting-toggle" for="startup-toggle"><span><strong>Launch with Windows</strong><small>Open Codex Pulse when you sign in</small></span><input id="startup-toggle" name="launchAtStartup" type="checkbox" /></label>
-          <label class="setting-toggle" for="notifications-toggle"><span><strong>Low-usage notifications</strong><small>Alert at 25%, 10%, and 5% remaining</small></span><input id="notifications-toggle" name="notificationsEnabled" type="checkbox" /></label>
-          <label class="setting-toggle" for="quiet-toggle"><span><strong>Quiet mode</strong><small>Start hidden while keeping tray updates</small></span><input id="quiet-toggle" name="quietMode" type="checkbox" /></label>
-          <div class="setting-row path-row">
-            <span><strong>Codex executable</strong><small id="codex-path-label">Automatically detected</small></span>
-            <button id="choose-codex-button" class="small-button" type="button">Choose…</button>
-          </div>
-          <button id="reset-position-button" class="secondary-button" type="button">Reset popup position</button>
-          <div class="update-row" aria-live="polite"><span id="update-status">Checking for updates…</span><button id="update-button" class="small-button" type="button" hidden>Check</button></div>
+          <label class="setting-row" for="theme-select"><span><strong>Appearance</strong><small>Follow Windows or choose light or dark mode</small></span><select id="theme-select" name="theme" title="Choose the app theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
+          <label class="setting-row" for="refresh-select"><span><strong>Refresh interval</strong><small>How often Codex usage and token activity are checked</small></span><select id="refresh-select" name="refreshInterval" title="Choose how often usage is refreshed"><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></label>
+          <label class="setting-toggle" for="startup-toggle"><span><strong>Launch with Windows</strong><small>Start the monitor when you sign in</small></span><input id="startup-toggle" name="launchAtStartup" type="checkbox" /></label>
+          <label class="setting-toggle" for="notifications-toggle"><span><strong>Usage notifications</strong><small>Alert for low limits, daily targets, and resets</small></span><input id="notifications-toggle" name="notificationsEnabled" type="checkbox" /></label>
+          <label class="setting-toggle" for="quiet-toggle"><span><strong>Quiet mode</strong><small>Start hidden; use the tray or Show to open it</small></span><input id="quiet-toggle" name="quietMode" type="checkbox" /></label>
+          <label class="setting-toggle" for="pet-toggle"><span><strong>Codex Pet companion</strong><small>Show live activity above the minimized logo</small></span><input id="pet-toggle" name="petEnabled" type="checkbox" /></label>
+          <label class="setting-row" for="daily-target-input"><span><strong>Daily token target</strong><small>Notify when today reaches this amount; 0 disables it</small></span><input id="daily-target-input" class="number-input" name="dailyTokenTarget" type="number" min="0" step="1000" placeholder="0" title="Set an optional daily token notification target" /></label>
+          <div class="setting-row path-row"><span><strong>Codex executable</strong><small id="codex-path-label">Automatically detected</small></span><button id="choose-codex-button" class="small-button" type="button" title="Choose the Codex executable manually">Choose&hellip;</button></div>
+          <button id="reset-position-button" class="secondary-button" type="button" title="Move the popup back to the primary display corner">Reset popup position</button>
+          <div class="export-settings"><strong>Export history</strong><small>Save locally collected token history for your records</small><div><button id="export-json-button" class="small-button" type="button" title="Save token history as a JSON file">JSON</button><button id="export-csv-button" class="small-button" type="button" title="Save token history as a CSV file">CSV</button></div></div>
+          <div class="update-row" aria-live="polite"><span id="update-status">Checking for updates&hellip;</span><button id="update-button" class="small-button" type="button" title="Check for a newer version" hidden>Check</button></div>
         </div>
       </section>
     </main>
