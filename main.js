@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const WINDOW_WIDTH = 368;
 const WINDOW_HEIGHT = 286;
+const MINI_SIZE = 64;
 const EDGE_GAP = 22;
 const POLL_INTERVAL = 60 * 1000;
 
@@ -12,6 +13,7 @@ let popup;
 let tray;
 let pollTimer;
 let isQuitting = false;
+let isMinimized = false;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function createTrayIcon() {
@@ -197,7 +199,12 @@ function positionPopup() {
 
 function showPopup() {
   if (!popup || popup.isDestroyed()) return;
-  positionPopup();
+  if (!isMinimized) {
+    const bounds = popup.getBounds();
+    if (bounds.width !== WINDOW_WIDTH || bounds.height !== WINDOW_HEIGHT) {
+      popup.setBounds({ x: bounds.x, y: bounds.y, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, false);
+    }
+  }
   app.focus({ steal: true });
   popup.setAlwaysOnTop(true, 'screen-saver');
   popup.show();
@@ -205,13 +212,36 @@ function showPopup() {
   popup.moveTop();
 }
 
+function setPopupView(minimized) {
+  if (!popup || popup.isDestroyed() || isMinimized === minimized) return;
+  const bounds = popup.getBounds();
+  isMinimized = minimized;
+  if (minimized) {
+    popup.setBounds({
+      x: bounds.x + bounds.width - MINI_SIZE,
+      y: bounds.y + bounds.height - MINI_SIZE,
+      width: MINI_SIZE,
+      height: MINI_SIZE,
+    }, false);
+  } else {
+    popup.setBounds({
+      x: bounds.x,
+      y: bounds.y,
+      width: WINDOW_WIDTH,
+      height: WINDOW_HEIGHT,
+    }, false);
+  }
+  popup.webContents.send('window:view', minimized ? 'mini' : 'full');
+  showPopup();
+}
+
 function createWindow() {
   popup = new BrowserWindow({
     width: WINDOW_WIDTH,
     height: WINDOW_HEIGHT,
-    minWidth: WINDOW_WIDTH,
+    minWidth: MINI_SIZE,
     maxWidth: WINDOW_WIDTH,
-    minHeight: WINDOW_HEIGHT,
+    minHeight: MINI_SIZE,
     maxHeight: WINDOW_HEIGHT,
     frame: false,
     transparent: true,
@@ -228,6 +258,7 @@ function createWindow() {
     },
   });
   popup.setAlwaysOnTop(true, 'screen-saver');
+  positionPopup();
   popup.loadFile(path.join(__dirname, 'index.html'));
   const revealPopup = () => {
     if (popup.isDestroyed() || process.argv.includes('--hidden')) return;
@@ -245,7 +276,6 @@ function createWindow() {
       popup.hide();
     }
   });
-  screen.on('display-metrics-changed', positionPopup);
 }
 
 function createTray() {
@@ -281,8 +311,14 @@ app.whenReady().then(() => {
   ipcMain.handle('usage:read', () => usageClient.readUsage());
   ipcMain.handle('app:hide', () => popup.hide());
   ipcMain.handle('app:show', () => showPopup());
+  ipcMain.handle('app:set-view', (_event, minimized) => setPopupView(Boolean(minimized)));
   ipcMain.handle('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
   ipcMain.handle('app:quit', () => { isQuitting = true; app.quit(); });
+  ipcMain.on('app:move', (_event, delta) => {
+    if (!popup || popup.isDestroyed() || !delta) return;
+    const [x, y] = popup.getPosition();
+    popup.setPosition(Math.round(x + Number(delta.dx || 0)), Math.round(y + Number(delta.dy || 0)), false);
+  });
   app.setLoginItemSettings({ openAtLogin: true });
   pollTimer = setInterval(() => {
     if (popup && !popup.isDestroyed()) popup.webContents.send('usage:refresh');

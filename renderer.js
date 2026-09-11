@@ -1,7 +1,11 @@
 const $ = (id) => document.getElementById(id);
 const refreshButton = $('refresh-button');
 const themeButton = $('theme-button');
+const minimizeButton = $('minimize-button');
+const miniView = $('mini-view');
+const card = document.querySelector('.card');
 let loading = false;
+let dragState = null;
 
 function applyTheme(theme) {
   const isDark = theme === 'dark';
@@ -79,8 +83,52 @@ async function refresh() {
 
 refreshButton.addEventListener('click', refresh);
 themeButton.addEventListener('click', () => applyTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'));
+minimizeButton.addEventListener('click', () => window.codexPulse.setView(true));
+miniView.addEventListener('click', () => window.codexPulse.setView(false));
+miniView.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    window.codexPulse.setView(false);
+  }
+});
 $('close-button').addEventListener('click', () => window.codexPulse.hide());
 $('codex-button').addEventListener('click', () => window.codexPulse.openCodex());
 window.codexPulse.onRefresh(refresh);
+
+card.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0 || event.target.closest('button, a, input')) return;
+  dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY, moved: false };
+  card.classList.add('is-dragging');
+  card.setPointerCapture(event.pointerId);
+});
+
+card.addEventListener('pointermove', (event) => {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  const dx = event.screenX - dragState.x;
+  const dy = event.screenY - dragState.y;
+  if (dx || dy) dragState.moved = true;
+  dragState.x = event.screenX;
+  dragState.y = event.screenY;
+  window.codexPulse.moveBy(dx, dy);
+});
+
+card.addEventListener('pointerup', (event) => {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  const wasMiniClick = document.body.dataset.view === 'mini' && !dragState.moved;
+  dragState = null;
+  card.classList.remove('is-dragging');
+  if (card.hasPointerCapture(event.pointerId)) card.releasePointerCapture(event.pointerId);
+  if (wasMiniClick) window.codexPulse.setView(false);
+});
+
+card.addEventListener('pointercancel', () => {
+  dragState = null;
+  card.classList.remove('is-dragging');
+});
+
+window.codexPulse.onViewChange((view) => {
+  document.body.dataset.view = view;
+  minimizeButton.setAttribute('aria-label', view === 'mini' ? 'Restore Codex Pulse' : 'Minimize to floating logo');
+});
 applyTheme(localStorage.getItem('codex-pulse-theme') || 'light');
 refresh();
