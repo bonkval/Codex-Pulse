@@ -448,6 +448,14 @@ function isPositionFullyVisible(x, y, width = MINI_WIDTH, height = MINI_HEIGHT) 
   ));
 }
 
+function isBoundsFullyVisible(bounds) {
+  return screen.getAllDisplays().some(({ workArea }) => (
+    bounds.x >= workArea.x && bounds.y >= workArea.y
+      && bounds.x + bounds.width <= workArea.x + workArea.width
+      && bounds.y + bounds.height <= workArea.y + workArea.height
+  ));
+}
+
 function logoAnchorForBounds(bounds) {
   return {
     x: Math.round(bounds.x + LOGO_ANCHOR_X + (LOGO_MARK_SIZE - MINI_WIDTH) / 2),
@@ -560,12 +568,27 @@ function petBoundsForAnchor(anchor, expanded = petExpanded) {
   return { x: Math.round(anchor.x), y: Math.round(anchor.y), width: MINI_WIDTH, height: MINI_HEIGHT };
 }
 
+function safePetAnchor(anchor) {
+  if (isPositionFullyVisible(anchor.x, anchor.y) && isBoundsFullyVisible(petBoundsForAnchor(anchor, true))) return anchor;
+  return logoAnchorForBounds(getDefaultPopupBounds());
+}
+
 function setPetExpanded(expanded) {
   if (!popup || popup.isDestroyed() || !isMinimized) return;
   const next = Boolean(expanded && settings.petEnabled);
   if (petExpanded === next) return;
   petExpanded = next;
-  const anchor = miniAnchor || popup.getBounds();
+  let anchor = miniAnchor || popup.getBounds();
+  if (next) {
+    const safeAnchor = safePetAnchor(anchor);
+    if (safeAnchor.x !== anchor.x || safeAnchor.y !== anchor.y) {
+      anchor = safeAnchor;
+      miniAnchor = safeAnchor;
+      expandedBounds = getDefaultPopupBounds();
+      settings.position = { x: expandedBounds.x, y: expandedBounds.y };
+      schedulePositionSave();
+    }
+  }
   popup.setBounds(petBoundsForAnchor(anchor, next), false);
   if (!popup.webContents.isLoading()) popup.webContents.send('pet:expanded', petExpanded);
 }
@@ -781,6 +804,7 @@ function showPopup() {
   popup.focus();
   popup.moveTop();
   if (!popup.webContents.isLoading()) {
+    popup.webContents.send('window:view', isMinimized ? 'mini' : 'full');
     popup.webContents.send('pet:activity', currentActivity);
     popup.webContents.send('pet:expanded', petExpanded);
     popup.webContents.send('usage:refresh');
