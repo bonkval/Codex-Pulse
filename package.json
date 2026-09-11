@@ -1,6 +1,6 @@
 {
   "name": "codex-pulse",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A quiet desktop usage monitor for Codex.",
   "main": "main.js",
   "author": "Codex Pulse",
@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
+    "test": "node --test",
     "dist": "electron-builder --win"
   },
   "devDependencies": {
@@ -21,6 +22,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "usage-logic.js",
       "index.html",
       "styles.css",
       "renderer.js",
@@ -31,11 +33,15 @@
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "artifactName": "Codex-Pulse-${version}-${arch}-tray.${ext}"
@@ -47,7 +53,18 @@
       "createDesktopShortcut": false,
       "include": "build/installer.nsh",
       "createStartMenuShortcut": true,
-      "artifactName": "Codex-Pulse-Setup-${version}.${ext}"
-    }
+      "artifactName": "Codex-Pulse-Setup.${ext}"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "bonkval",
+        "repo": "ai-tray",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }

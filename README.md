@@ -2,13 +2,13 @@
 
 Codex Pulse is a lightweight Windows companion app that shows how much Codex usage you have remaining in your current 5-hour and weekly limits while you work.
 
-> **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest)**
+> **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
-> Open the latest release and download the `Codex-Pulse-Setup.exe` installer.
+> If the direct download is unavailable, use the [latest release page](https://github.com/bonkval/ai-tray/releases/latest).
 
 ## Install and run
 
-1. Click **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest)** and download the `Codex-Pulse-Setup.exe` installer.
+1. Click **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**.
 2. Double-click the installer to install Codex Pulse.
 3. Leave **Create a desktop shortcut** checked if you want an icon on your desktop.
 4. Finish the installation, then open Codex Pulse from the desktop shortcut or the Start Menu.
@@ -21,11 +21,16 @@ Codex Pulse opens automatically as a small popup. No PowerShell or terminal comm
 - Shows remaining usage for the 7-day weekly limit.
 - Syncs usage from your local Codex login.
 - Refreshes usage automatically every 30 seconds and includes a manual refresh button.
+- Sends optional notifications when usage reaches 25%, 10%, or 5% remaining.
+- Shows healthy, warning, and critical usage states.
 - Stays available while you code in VS Code or other apps.
 - Can be moved anywhere on the screen.
+- Remembers the popup position across restarts and monitors.
 - Minimizes to a compact floating logo and restores when clicked.
-- Supports light mode and dark mode.
+- Supports light, dark, and system themes.
+- Includes settings for refresh interval, startup behavior, notifications, quiet mode, and Codex executable selection.
 - Includes a Windows tray icon for showing, hiding, refreshing, opening Codex, and quitting the app.
-- Can be configured to launch with Windows.
+- Can be configured to launch with Windows or run quietly in the tray.
+- Checks GitHub Releases for updates and can install them from the app.
 
 Codex Pulse does not ask for or store API keys. It uses the existing local Codex session on your computer.
