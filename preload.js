@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('codexPulse', {
   hide: () => ipcRenderer.invoke('app:hide'),
   show: () => ipcRenderer.invoke('app:show'),
   setView: (minimized) => ipcRenderer.invoke('app:set-view', minimized),
+  setMiniDragging: (dragging) => ipcRenderer.invoke('app:mini-dragging', dragging),
   moveBy: (dx, dy) => ipcRenderer.send('app:move', { dx, dy }),
   openCodex: () => ipcRenderer.invoke('app:open-codex'),
   quit: () => ipcRenderer.invoke('app:quit'),

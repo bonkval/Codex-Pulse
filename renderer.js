@@ -613,6 +613,7 @@ card.addEventListener('pointercancel', () => { dragState = null; card.classList.
 miniView.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
   suppressMiniClick = false;
+  window.codexPulse.setMiniDragging(true);
   dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY, startX: event.screenX, startY: event.screenY };
   miniView.classList.add('is-dragging');
   miniView.setPointerCapture(event.pointerId);
@@ -629,11 +630,18 @@ miniView.addEventListener('pointermove', (event) => {
 miniView.addEventListener('pointerup', (event) => {
   if (!dragState || event.pointerId !== dragState.pointerId) return;
   dragState = null;
+  window.codexPulse.setMiniDragging(false);
   miniView.classList.remove('is-dragging');
   if (miniView.hasPointerCapture(event.pointerId)) miniView.releasePointerCapture(event.pointerId);
   if (suppressMiniClick) setTimeout(() => { suppressMiniClick = false; }, 100);
 });
-miniView.addEventListener('pointercancel', () => { dragState = null; miniView.classList.remove('is-dragging'); suppressMiniClick = false; });
+miniView.addEventListener('pointercancel', () => { window.codexPulse.setMiniDragging(false); });
+window.addEventListener('blur', () => {
+  if (!dragState) return;
+  dragState = null;
+  miniView.classList.remove('is-dragging');
+  window.codexPulse.setMiniDragging(false);
+});
 window.codexPulse.onViewChange((view) => { document.body.dataset.view = view; minimizeButton.setAttribute('aria-label', view === 'mini' ? 'Restore the full Codex Pulse window' : 'Minimize to floating logo'); minimizeButton.setAttribute('title', view === 'mini' ? 'Restore the full Codex Pulse window' : 'Minimize to a floating logo'); });
 
 (async () => { updateSettingsPanel(await window.codexPulse.getSettings()); renderUpdateState({ status: 'checking' }); await window.codexPulse.checkForUpdates(); await refresh(); })();

@@ -55,6 +55,7 @@ let historySaveTimer;
 let petExpanded = false;
 let petUnread = false;
 let miniAnchor = null;
+let miniDragging = false;
 let currentActivity = { state: 'idle', text: 'Waiting for Codex' };
 let latestLiveUsage = null;
 let latestUpdateState = { status: 'checking' };
@@ -253,7 +254,7 @@ function commitSettings(patch) {
   if (previous.launchAtStartup !== next.launchAtStartup) applyStartupSetting();
   if (previous.refreshInterval !== next.refreshInterval) startPolling();
   if (previous.codexPath !== next.codexPath) usageClient.stop();
-  if (previous.petEnabled !== next.petEnabled) setPetExpanded(next.petEnabled && currentActivity.state !== 'idle');
+  if (previous.petEnabled !== next.petEnabled && !miniDragging) setPetExpanded(next.petEnabled && currentActivity.state !== 'idle');
   if (previous.alwaysOnTop !== next.alwaysOnTop) popup?.setAlwaysOnTop(next.alwaysOnTop, 'screen-saver');
   if (previous.popupOpacity !== next.popupOpacity) popup?.setOpacity(next.popupOpacity / 100);
   if (previous.popupSize !== next.popupSize && popup && !popup.isDestroyed() && !isMinimized) {
@@ -553,7 +554,7 @@ function setActivity(next) {
   currentActivity = { ...currentActivity, ...next, updatedAt: Date.now() };
   if (currentActivity.state === 'done' && previous.state !== 'done') petUnread = true;
   if (popup && !popup.isDestroyed() && !popup.webContents.isLoading()) popup.webContents.send('pet:activity', currentActivity);
-  setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
+  if (!miniDragging) setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
 }
 
 function petBoundsForAnchor(anchor, expanded = petExpanded) {
@@ -840,6 +841,7 @@ function setPopupView(minimized) {
   } else {
     const restoreBounds = expandedBounds || bounds;
     const size = getWindowSize();
+    miniDragging = false;
     popup.setBounds({
       x: restoreBounds.x,
       y: restoreBounds.y,
@@ -945,6 +947,12 @@ app.whenReady().then(() => {
   ipcMain.handle('app:hide', () => popup.hide());
   ipcMain.handle('app:show', () => showPopup());
   ipcMain.handle('app:set-view', (_event, minimized) => setPopupView(Boolean(minimized)));
+  ipcMain.handle('app:mini-dragging', (_event, dragging) => {
+    miniDragging = Boolean(dragging);
+    if (miniDragging) setPetExpanded(false);
+    else setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
+    return miniDragging;
+  });
   ipcMain.handle('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
   ipcMain.handle('settings:read', () => ({ ...settings, globalShortcutError }));
   ipcMain.handle('settings:update', (_event, patch) => commitSettings(patch));
