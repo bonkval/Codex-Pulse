@@ -14,11 +14,7 @@ let pollTimer;
 let isQuitting = false;
 
 function createTrayIcon() {
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-    <rect width="32" height="32" rx="8" fill="#101113"/>
-    <path d="M16 5.2c2.4 0 4.3 1.9 4.3 4.3v2.2l1.9-1.1c2.1-1.2 4.7-.5 5.9 1.6 1.2 2.1.5 4.7-1.6 5.9l-1.9 1.1 1.9 1.1c2.1 1.2 2.8 3.8 1.6 5.9-1.2 2.1-3.8 2.8-5.9 1.6l-1.9-1.1V29c0 2.4-1.9 4.3-4.3 4.3s-4.3-1.9-4.3-4.3v-2.2l-1.9 1.1c-2.1 1.2-4.7.5-5.9-1.6-1.2-2.1-.5-4.7 1.6-5.9l1.9-1.1-1.9-1.1c-2.1-1.2-2.8-3.8-1.6-5.9 1.2-2.1 3.8-2.8 5.9-1.6l1.9 1.1V9.5c0-2.4 1.9-4.3 4.3-4.3Z" fill="#f4f1ec" transform="translate(0 -1.7) scale(.88) translate(2.1 2.1)"/>
-  </svg>`;
-  return nativeImage.createFromDataURL(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+  return nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png'));
 }
 
 function resolveCodexCommand() {

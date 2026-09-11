@@ -23,11 +23,12 @@
       "index.html",
       "styles.css",
       "renderer.js",
+      "assets/**",
       "package.json"
     ],
     "win": {
       "target": "portable",
-      "artifactName": "Codex-Pulse-${version}-${arch}.${ext}"
+      "artifactName": "Codex-Pulse-${version}-${arch}-tray.${ext}"
     }
   }
 }
