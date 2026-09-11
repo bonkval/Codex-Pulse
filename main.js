@@ -317,6 +317,17 @@ function activityTextForItem(item) {
   return 'Working on your code...';
 }
 
+function isActiveThreadStatus(status) {
+  return status === 'active' || status?.type === 'active' || status?.state === 'active';
+}
+
+function activityTextForStatus(status) {
+  const flags = Array.isArray(status?.activeFlags) ? status.activeFlags : [];
+  if (flags.includes('waitingOnApproval')) return 'Waiting for your approval...';
+  if (flags.includes('waitingOnUserInput')) return 'Waiting for your input...';
+  return 'Working on your code...';
+}
+
 function setActivity(next) {
   const previous = currentActivity;
   currentActivity = { ...currentActivity, ...next, updatedAt: Date.now() };
@@ -391,11 +402,18 @@ class CodexUsageClient {
           if (!line.trim()) continue;
           try {
             const message = JSON.parse(line);
-            if (message.method === 'turn/started') setActivity({ state: 'working', text: 'Starting a Codex turn...', threadId: message.params?.turn?.id || null });
+            if (message.method === 'thread/status/changed') {
+              const status = message.params?.status;
+              const threadId = message.params?.threadId || null;
+              if (isActiveThreadStatus(status)) setActivity({ state: 'working', text: activityTextForStatus(status), threadId, source: 'status-event' });
+              else if (currentActivity.state === 'working' && (!threadId || currentActivity.threadId === threadId)) setActivity({ state: 'done', text: 'Codex finished the task.', threadId, source: 'status-event' });
+            }
+            if (message.method === 'turn/started') setActivity({ state: 'working', text: 'Starting a Codex turn...', threadId: message.params?.threadId || message.params?.turn?.id || null, source: 'turn-event' });
             if (message.method === 'item/started') setActivity({ state: 'working', text: activityTextForItem(message.params?.item), threadId: message.params?.threadId || null });
             if (message.method === 'turn/completed') setActivity({ state: 'done', text: message.params?.turn?.status === 'failed' ? 'Codex finished with an error.' : 'Codex finished the task.' });
             if (message.method === 'thread/tokenUsage/updated') {
               this.latestTokenUsage = message.params || null;
+              if (currentActivity.state === 'idle') setActivity({ state: 'working', text: 'Using Codex...', threadId: message.params?.threadId || null, source: 'token-event' });
             }
             if (message.id && this.pending.has(message.id)) {
               const request = this.pending.get(message.id);
@@ -480,15 +498,9 @@ class CodexUsageClient {
     }).catch(() => null);
     if (!result) result = await this.request('thread/list', listParams).catch(() => null);
     const threads = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : Array.isArray(result?.threads) ? result.threads : [];
-    const active = threads.find((thread) => {
-      const status = thread?.status;
-      return status === 'active' || status?.type === 'active' || status?.state === 'active' || thread?.active === true || thread?.isActive === true;
-    });
+    const active = threads.find((thread) => isActiveThreadStatus(thread?.status) || thread?.active === true || thread?.isActive === true);
     if (active) {
-      const flags = active.status.activeFlags || [];
-      let text = 'Working on your code...';
-      if (flags.includes('waitingOnApproval')) text = 'Waiting for your approval...';
-      else if (flags.includes('waitingOnUserInput')) text = 'Waiting for your input...';
+      const text = activityTextForStatus(active.status);
       if (currentActivity.state !== 'working' || currentActivity.source === 'thread-list' || currentActivity.threadId !== active.id) {
         setActivity({ state: 'working', text, threadId: active.id, preview: active.preview || active.name || '', source: 'thread-list' });
       }
