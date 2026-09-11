@@ -218,10 +218,19 @@ function createWindow() {
   });
   popup.setAlwaysOnTop(true, 'floating');
   popup.loadFile(path.join(__dirname, 'index.html'));
-  popup.once('ready-to-show', () => {
+  const revealPopup = () => {
+    if (popup.isDestroyed() || process.argv.includes('--hidden')) return;
     positionPopup();
-    if (!process.argv.includes('--hidden')) popup.showInactive();
-  });
+    popup.show();
+    popup.focus();
+  };
+  if (!process.argv.includes('--hidden')) {
+    positionPopup();
+    popup.show();
+  }
+  popup.once('ready-to-show', revealPopup);
+  popup.webContents.once('did-finish-load', () => setTimeout(revealPopup, 80));
+  setTimeout(revealPopup, 1500);
   popup.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
