@@ -106,8 +106,8 @@ body[data-theme="dark"] .card {
 }
 
 body[data-theme="dark"] .card::after { box-shadow: inset 0 0 0 1px rgba(0,0,0,.28); }
-body[data-theme="dark"] .logo-mark { background: #f4f1ec; border-color: rgba(255,255,255,.3); box-shadow: 0 0 0 1px rgba(255,255,255,.3), 0 5px 14px rgba(0,0,0,.22); }
-body[data-theme="dark"] .logo-mark svg { color: #171819; }
+body[data-theme="dark"] .logo-mark { background: #2a2b2d; border-color: rgba(255,255,255,.16); box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 5px 14px rgba(0,0,0,.28); }
+body[data-theme="dark"] .logo-mark svg { color: #f4f1ec; }
 body[data-theme="dark"] .mini-logo svg { color: #171819; }
 body[data-theme="dark"] .mini-logo { color: #f4f1ec; }
 body[data-theme="dark"] .icon-button { color: #999691; }
