@@ -40,10 +40,11 @@
       "artifactName": "Codex-Pulse-${version}-${arch}-tray.${ext}"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
-      "createDesktopShortcut": true,
+      "createDesktopShortcut": false,
+      "include": "build/installer.nsh",
       "createStartMenuShortcut": true,
       "artifactName": "Codex-Pulse-Setup-${version}.${ext}"
     }
