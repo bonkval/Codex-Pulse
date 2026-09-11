@@ -16,7 +16,7 @@ Codex Pulse opens automatically as a small popup. No PowerShell or terminal comm
 - Shows remaining usage for the rolling 5-hour limit.
 - Shows remaining usage for the 7-day weekly limit.
 - Syncs usage from your local Codex login.
-- Refreshes usage automatically and includes a manual refresh button.
+- Refreshes usage automatically every 30 seconds and includes a manual refresh button.
 - Stays available while you code in VS Code or other apps.
 - Can be moved anywhere on the screen.
 - Minimizes to a compact floating logo and restores when clicked.

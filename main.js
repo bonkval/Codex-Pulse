@@ -10,7 +10,7 @@ const LOGO_ANCHOR_X = 22;
 const LOGO_ANCHOR_Y = 22;
 const LOGO_MARK_SIZE = 39;
 const EDGE_GAP = 22;
-const POLL_INTERVAL = 60 * 1000;
+const POLL_INTERVAL = 30 * 1000;
 
 let popup;
 let tray;
