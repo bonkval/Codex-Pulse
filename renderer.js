@@ -30,7 +30,7 @@ let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let activeHistoryBar = null;
 let historyTooltipPinned = false;
 let suppressMiniClick = false;
-let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00', notifyOnlyWhenActive: false, notificationSnoozeUntil: 0, alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
+let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], notificationSnoozeUntil: 0, alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
 const notificationLevels = { primary: null, secondary: null };
 
 function effectiveTheme(theme) {
@@ -378,19 +378,8 @@ function refreshResetLabels() {
   $('secondary-reset').textContent = formatReset(currentUsage.secondary && currentUsage.secondary.resetsAt);
 }
 
-function withinQuietHours() {
-  if (!settings.quietHoursEnabled) return false;
-  const now = new Date();
-  const minutes = now.getHours() * 60 + now.getMinutes();
-  const [startHour, startMinute] = String(settings.quietHoursStart || '22:00').split(':').map(Number);
-  const [endHour, endMinute] = String(settings.quietHoursEnd || '08:00').split(':').map(Number);
-  const start = startHour * 60 + startMinute;
-  const end = endHour * 60 + endMinute;
-  return start === end ? true : (start < end ? minutes >= start && minutes < end : minutes >= start || minutes < end);
-}
-
 function notificationsSuppressed(data) {
-  return !settings.notificationsEnabled || Date.now() < Number(settings.notificationSnoozeUntil || 0) || withinQuietHours() || (settings.notifyOnlyWhenActive && data?.activity?.state !== 'working');
+  return !settings.notificationsEnabled || Date.now() < Number(settings.notificationSnoozeUntil || 0);
 }
 
 function notificationThreshold(percent, thresholds) {
@@ -492,10 +481,6 @@ function updateSettingsPanel(next) {
   $('daily-target-input').value = settings.dailyTokenTarget || '';
   $('codex-path-label').textContent = settings.codexPath || 'Automatically detected';
   document.body.dataset.compact = settings.compactMode ? 'true' : 'false';
-  $('quiet-hours-toggle').checked = settings.quietHoursEnabled;
-  $('quiet-hours-start').value = settings.quietHoursStart;
-  $('quiet-hours-end').value = settings.quietHoursEnd;
-  $('active-only-toggle').checked = settings.notifyOnlyWhenActive;
   $('popup-size-select').value = settings.popupSize;
   $('opacity-select').value = String(settings.popupOpacity);
   $('always-on-top-toggle').checked = settings.alwaysOnTop;
@@ -562,10 +547,6 @@ $('notifications-toggle').addEventListener('change', (event) => saveSetting({ no
 $('quiet-toggle').addEventListener('change', (event) => saveSetting({ quietMode: event.target.checked }));
 $('pet-toggle').addEventListener('change', (event) => saveSetting({ petEnabled: event.target.checked }));
 $('daily-target-input').addEventListener('change', (event) => saveSetting({ dailyTokenTarget: event.target.value }));
-$('quiet-hours-toggle').addEventListener('change', (event) => saveSetting({ quietHoursEnabled: event.target.checked }));
-$('quiet-hours-start').addEventListener('change', (event) => saveSetting({ quietHoursStart: event.target.value }));
-$('quiet-hours-end').addEventListener('change', (event) => saveSetting({ quietHoursEnd: event.target.value }));
-$('active-only-toggle').addEventListener('change', (event) => saveSetting({ notifyOnlyWhenActive: event.target.checked }));
 $('popup-size-select').addEventListener('change', (event) => saveSetting({ popupSize: event.target.value }));
 $('opacity-select').addEventListener('change', (event) => saveSetting({ popupOpacity: Number(event.target.value) }));
 $('always-on-top-toggle').addEventListener('change', (event) => saveSetting({ alwaysOnTop: event.target.checked }));

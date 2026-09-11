@@ -29,10 +29,6 @@ const DEFAULT_SETTINGS = {
   globalShortcut: 'CommandOrControl+Shift+Alt+P',
   primaryAlertThresholds: [50, 25, 10],
   secondaryAlertThresholds: [50, 25, 10],
-  quietHoursEnabled: false,
-  quietHoursStart: '22:00',
-  quietHoursEnd: '08:00',
-  notifyOnlyWhenActive: false,
   notificationSnoozeUntil: 0,
   alwaysOnTop: true,
   popupOpacity: 100,
@@ -143,6 +139,10 @@ function addUsageSnapshot(primary, secondary) {
 function loadSettings() {
   try {
     const saved = JSON.parse(fs.readFileSync(settingsPath(), 'utf8'));
+    delete saved.notifyOnlyWhenActive;
+    delete saved.quietHoursEnabled;
+    delete saved.quietHoursStart;
+    delete saved.quietHoursEnd;
     settings = {
       ...DEFAULT_SETTINGS,
       ...saved,
@@ -152,10 +152,6 @@ function loadSettings() {
       globalShortcut: typeof saved.globalShortcut === 'string' ? saved.globalShortcut.trim() : DEFAULT_SETTINGS.globalShortcut,
       primaryAlertThresholds: Array.isArray(saved.primaryAlertThresholds) ? saved.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value)) : DEFAULT_SETTINGS.primaryAlertThresholds,
       secondaryAlertThresholds: Array.isArray(saved.secondaryAlertThresholds) ? saved.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value)) : DEFAULT_SETTINGS.secondaryAlertThresholds,
-      quietHoursEnabled: Boolean(saved.quietHoursEnabled),
-      quietHoursStart: /^\d{2}:\d{2}$/.test(saved.quietHoursStart) ? saved.quietHoursStart : DEFAULT_SETTINGS.quietHoursStart,
-      quietHoursEnd: /^\d{2}:\d{2}$/.test(saved.quietHoursEnd) ? saved.quietHoursEnd : DEFAULT_SETTINGS.quietHoursEnd,
-      notifyOnlyWhenActive: Boolean(saved.notifyOnlyWhenActive),
       notificationSnoozeUntil: Number.isFinite(Number(saved.notificationSnoozeUntil)) ? Number(saved.notificationSnoozeUntil) : 0,
       alwaysOnTop: saved.alwaysOnTop !== false,
       popupOpacity: [70, 85, 100].includes(Number(saved.popupOpacity)) ? Number(saved.popupOpacity) : DEFAULT_SETTINGS.popupOpacity,
@@ -223,10 +219,6 @@ function updateSettings(patch) {
   if (typeof patch.petEnabled === 'boolean') settings.petEnabled = patch.petEnabled;
   if (Array.isArray(patch.primaryAlertThresholds)) settings.primaryAlertThresholds = patch.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
   if (Array.isArray(patch.secondaryAlertThresholds)) settings.secondaryAlertThresholds = patch.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
-  if (typeof patch.quietHoursEnabled === 'boolean') settings.quietHoursEnabled = patch.quietHoursEnabled;
-  if (typeof patch.quietHoursStart === 'string' && /^\d{2}:\d{2}$/.test(patch.quietHoursStart)) settings.quietHoursStart = patch.quietHoursStart;
-  if (typeof patch.quietHoursEnd === 'string' && /^\d{2}:\d{2}$/.test(patch.quietHoursEnd)) settings.quietHoursEnd = patch.quietHoursEnd;
-  if (typeof patch.notifyOnlyWhenActive === 'boolean') settings.notifyOnlyWhenActive = patch.notifyOnlyWhenActive;
   if (Number.isFinite(Number(patch.notificationSnoozeUntil))) settings.notificationSnoozeUntil = Math.max(0, Number(patch.notificationSnoozeUntil));
   if (typeof patch.alwaysOnTop === 'boolean') settings.alwaysOnTop = patch.alwaysOnTop;
   if ([70, 85, 100].includes(Number(patch.popupOpacity))) settings.popupOpacity = Number(patch.popupOpacity);
