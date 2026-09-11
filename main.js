@@ -440,6 +440,29 @@ function clampPosition(x, y) {
   };
 }
 
+function isPositionFullyVisible(x, y, width = MINI_WIDTH, height = MINI_HEIGHT) {
+  return screen.getAllDisplays().some(({ workArea }) => (
+    x >= workArea.x && y >= workArea.y
+      && x + width <= workArea.x + workArea.width
+      && y + height <= workArea.y + workArea.height
+  ));
+}
+
+function logoAnchorForBounds(bounds) {
+  return {
+    x: Math.round(bounds.x + LOGO_ANCHOR_X + (LOGO_MARK_SIZE - MINI_WIDTH) / 2),
+    y: Math.round(bounds.y + LOGO_ANCHOR_Y + (LOGO_MARK_SIZE - MINI_HEIGHT) / 2),
+  };
+}
+
+function getDefaultPopupBounds() {
+  const display = screen.getPrimaryDisplay();
+  const { x, y, width, height } = display.workArea;
+  const size = getWindowSize();
+  const position = clampPosition(x + width - size.width - EDGE_GAP, y + height - size.height - EDGE_GAP);
+  return { x: position.x, y: position.y, width: size.width, height: size.height };
+}
+
 function createTrayIcon() {
   return nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png')).resize({ width: 16, height: 16 });
 }
@@ -725,16 +748,14 @@ const usageClient = new CodexUsageClient();
 function positionPopup() {
   if (!popup) return;
   const display = screen.getPrimaryDisplay();
-  const { x, y, width, height } = display.workArea;
-  const size = getWindowSize();
+  const defaultBounds = getDefaultPopupBounds();
   const saved = settings.rememberPerMonitor ? settings.positions[String(display.id)] || settings.position : settings.position;
   if (saved && isPositionVisible(saved.x, saved.y)) {
     const position = clampPosition(saved.x, saved.y);
     popup.setPosition(position.x, position.y, false);
     return;
   }
-  const position = clampPosition(x + width - size.width - EDGE_GAP, y + height - size.height - EDGE_GAP);
-  popup.setPosition(position.x, position.y, false);
+  popup.setPosition(defaultBounds.x, defaultBounds.y, false);
 }
 
 function showPopup() {
@@ -763,11 +784,18 @@ function setPopupView(minimized) {
   const bounds = popup.getBounds();
   isMinimized = minimized;
   if (minimized) {
-    expandedBounds = bounds;
-    miniAnchor = {
+    const candidateAnchor = {
       x: Math.round(bounds.x + LOGO_ANCHOR_X + (LOGO_MARK_SIZE - MINI_WIDTH) / 2),
       y: Math.round(bounds.y + LOGO_ANCHOR_Y + (LOGO_MARK_SIZE - MINI_HEIGHT) / 2),
     };
+    if (isPositionFullyVisible(candidateAnchor.x, candidateAnchor.y)) {
+      expandedBounds = bounds;
+      miniAnchor = candidateAnchor;
+    } else {
+      expandedBounds = getDefaultPopupBounds();
+      miniAnchor = logoAnchorForBounds(expandedBounds);
+      settings.position = { x: expandedBounds.x, y: expandedBounds.y };
+    }
     popup.setBounds({ ...miniAnchor, width: MINI_WIDTH, height: MINI_HEIGHT }, false);
   } else {
     const restoreBounds = expandedBounds || bounds;
