@@ -1,6 +1,6 @@
 {
   "name": "codex-pulse",
-  "version": "1.5.1",
+  "version": "1.5.3",
   "description": "A quiet desktop usage monitor for Codex.",
   "main": "main.js",
   "author": "Codex Pulse",
@@ -33,12 +33,6 @@
     ],
     "win": {
       "target": [
-        {
-          "target": "portable",
-          "arch": [
-            "x64"
-          ]
-        },
         {
           "target": "nsis",
           "arch": [

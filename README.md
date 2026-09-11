@@ -2,7 +2,7 @@
 
 Codex Pulse is a lightweight Windows companion for Codex. It stays near your tray and shows your remaining 5-hour and weekly usage, live token activity, and what Codex is currently doing in VS Code.
 
-**Current version: 1.5.1**
+**Current version: 1.5.3**
 
 > **[Download the latest Codex Pulse installer](https://github.com/bonkval/Codex-Pulse/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
@@ -56,9 +56,8 @@ Codex Pulse does not ask for or store API keys. It uses the existing local Codex
 
 ## Latest release files
 
-For the v1.5.1 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
+For the v1.5.3 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
 
 - `Codex-Pulse-Setup.exe` — the only required download; use this to install Codex Pulse.
 - `Codex-Pulse-Setup.exe.blockmap` — optional; helps the automatic updater download updates efficiently.
 - `latest.yml` — optional for installation; lets the app find and install updates automatically.
-- `Codex-Pulse-1.5.1-x64-tray.exe` — optional portable version.
