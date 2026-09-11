@@ -30,7 +30,7 @@ let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let activeHistoryBar = null;
 let historyTooltipPinned = false;
 let suppressMiniClick = false;
-let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], notificationSnoozeUntil: 0, alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
+let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
 const notificationLevels = { primary: null, secondary: null };
 
 function effectiveTheme(theme) {
@@ -379,7 +379,7 @@ function refreshResetLabels() {
 }
 
 function notificationsSuppressed(data) {
-  return !settings.notificationsEnabled || Date.now() < Number(settings.notificationSnoozeUntil || 0);
+  return !settings.notificationsEnabled;
 }
 
 function notificationThreshold(percent, thresholds) {
@@ -560,8 +560,6 @@ document.querySelectorAll('.threshold-toggle').forEach((input) => input.addEvent
   const secondaryAlertThresholds = [...document.querySelectorAll('.threshold-toggle[data-window="secondary"]:checked')].map((element) => Number(element.dataset.threshold));
   saveSetting({ primaryAlertThresholds, secondaryAlertThresholds });
 }));
-$('test-notification-button').addEventListener('click', () => window.codexPulse.showNotification({ kind: 'test' }));
-$('snooze-button').addEventListener('click', async () => { updateSettingsPanel(await window.codexPulse.snoozeNotifications(60)); });
 $('import-button').addEventListener('click', async () => { const result = await window.codexPulse.importHistory(); if (result.imported) refresh(); });
 $('clear-history-button').addEventListener('click', async () => { const result = await window.codexPulse.clearHistory(); if (result.cleared) refresh(); });
 $('diagnostics-button').addEventListener('click', async () => {

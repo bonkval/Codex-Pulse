@@ -19,7 +19,6 @@ contextBridge.exposeInMainWorld('codexPulse', {
   clearPet: () => ipcRenderer.invoke('pet:clear'),
   updateTray: (data) => ipcRenderer.invoke('tray:update', data),
   showNotification: (data) => ipcRenderer.invoke('notifications:show', data),
-  snoozeNotifications: (minutes) => ipcRenderer.invoke('notifications:snooze', minutes),
   runDiagnostics: () => ipcRenderer.invoke('diagnostics:run'),
   checkForUpdates: () => ipcRenderer.invoke('app:check-updates'),
   downloadUpdate: () => ipcRenderer.invoke('app:download-update'),

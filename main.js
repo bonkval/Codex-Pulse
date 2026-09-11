@@ -29,7 +29,6 @@ const DEFAULT_SETTINGS = {
   globalShortcut: 'CommandOrControl+Shift+Alt+P',
   primaryAlertThresholds: [50, 25, 10],
   secondaryAlertThresholds: [50, 25, 10],
-  notificationSnoozeUntil: 0,
   alwaysOnTop: true,
   popupOpacity: 100,
   popupSize: 'normal',
@@ -143,6 +142,7 @@ function loadSettings() {
     delete saved.quietHoursEnabled;
     delete saved.quietHoursStart;
     delete saved.quietHoursEnd;
+    delete saved.notificationSnoozeUntil;
     settings = {
       ...DEFAULT_SETTINGS,
       ...saved,
@@ -152,7 +152,6 @@ function loadSettings() {
       globalShortcut: typeof saved.globalShortcut === 'string' ? saved.globalShortcut.trim() : DEFAULT_SETTINGS.globalShortcut,
       primaryAlertThresholds: Array.isArray(saved.primaryAlertThresholds) ? saved.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value)) : DEFAULT_SETTINGS.primaryAlertThresholds,
       secondaryAlertThresholds: Array.isArray(saved.secondaryAlertThresholds) ? saved.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value)) : DEFAULT_SETTINGS.secondaryAlertThresholds,
-      notificationSnoozeUntil: Number.isFinite(Number(saved.notificationSnoozeUntil)) ? Number(saved.notificationSnoozeUntil) : 0,
       alwaysOnTop: saved.alwaysOnTop !== false,
       popupOpacity: [70, 85, 100].includes(Number(saved.popupOpacity)) ? Number(saved.popupOpacity) : DEFAULT_SETTINGS.popupOpacity,
       popupSize: Object.prototype.hasOwnProperty.call(WINDOW_SIZES, saved.popupSize) ? saved.popupSize : DEFAULT_SETTINGS.popupSize,
@@ -219,7 +218,6 @@ function updateSettings(patch) {
   if (typeof patch.petEnabled === 'boolean') settings.petEnabled = patch.petEnabled;
   if (Array.isArray(patch.primaryAlertThresholds)) settings.primaryAlertThresholds = patch.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
   if (Array.isArray(patch.secondaryAlertThresholds)) settings.secondaryAlertThresholds = patch.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
-  if (Number.isFinite(Number(patch.notificationSnoozeUntil))) settings.notificationSnoozeUntil = Math.max(0, Number(patch.notificationSnoozeUntil));
   if (typeof patch.alwaysOnTop === 'boolean') settings.alwaysOnTop = patch.alwaysOnTop;
   if ([70, 85, 100].includes(Number(patch.popupOpacity))) settings.popupOpacity = Number(patch.popupOpacity);
   if (Object.prototype.hasOwnProperty.call(WINDOW_SIZES, patch.popupSize)) settings.popupSize = patch.popupSize;
@@ -365,11 +363,6 @@ function updateTrayTooltip(data) {
 
 function showUsageNotification(data) {
   if (!settings.notificationsEnabled || !Notification.isSupported()) return false;
-  if (data?.kind === 'test') {
-    const notification = new Notification({ title: 'Codex Pulse notifications are working', body: 'You will be notified according to your alert settings.', silent: true });
-    notification.on('click', showPopup); notification.show();
-    return true;
-  }
   if (data?.kind === 'token-target') {
     const notification = new Notification({ title: 'Codex daily target reached', body: `Today\'s token activity reached ${Number(data.target).toLocaleString()} tokens.`, silent: true });
     notification.on('click', showPopup); notification.show();
@@ -955,11 +948,6 @@ app.whenReady().then(() => {
     return true;
   });
   ipcMain.handle('notifications:show', (_event, data) => showUsageNotification(data));
-  ipcMain.handle('notifications:snooze', (_event, minutes = 60) => {
-    settings.notificationSnoozeUntil = Date.now() + Math.max(1, Number(minutes) || 60) * 60000;
-    saveSettings();
-    return { ...settings, globalShortcutError };
-  });
   ipcMain.handle('diagnostics:run', () => runDiagnostics());
   ipcMain.handle('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });
   ipcMain.handle('pet:clear', () => { clearPetNotification(); return true; });

@@ -39,7 +39,7 @@ Codex Pulse runs as a normal Windows app. No PowerShell, terminal, Node.js, or V
 - Estimates how long your remaining usage may last based on your recent pace.
 - Shows a Codex Pet companion above the minimized logo while Codex is working and a green completion badge when it finishes.
 - Sends configurable notifications for separate 5-hour and weekly thresholds, daily token targets, and rate-limit resets.
-- Provides connection diagnostics, a clipboard-ready report, notification snoozing, and local history clear/backup/restore controls.
+- Provides connection diagnostics, a clipboard-ready report, and local history clear/backup/restore controls.
 - Shows plan, connection health, last sync time, and reset credits when provided.
 - Supports light, dark, and system themes.
 - Supports compact mode, adjustable popup size and opacity, always-on-top, start minimized, pause monitoring, and per-monitor positions.
