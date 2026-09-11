@@ -2,9 +2,13 @@
 
 Codex Pulse is a lightweight Windows companion app that shows how much Codex usage you have remaining in your current 5-hour and weekly limits while you work.
 
+> **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest)**
+>
+> Open the latest release and download the `Codex-Pulse-Setup.exe` installer.
+
 ## Install and run
 
-1. Download the latest `Codex-Pulse-Setup.exe` installer from the repository's **Releases** page.
+1. Click **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest)** and download the `Codex-Pulse-Setup.exe` installer.
 2. Double-click the installer to install Codex Pulse.
 3. Leave **Create a desktop shortcut** checked if you want an icon on your desktop.
 4. Finish the installation, then open Codex Pulse from the desktop shortcut or the Start Menu.
