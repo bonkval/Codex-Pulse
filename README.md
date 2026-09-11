@@ -1,43 +1,52 @@
 # Codex Pulse
 
-Codex Pulse is a lightweight Windows companion app that shows how much Codex usage you have remaining in your current 5-hour and weekly limits while you work.
+Codex Pulse is a lightweight Windows companion for Codex. It stays near your tray and shows your remaining 5-hour and weekly usage, live token activity, and what Codex is currently doing in VS Code.
 
-> **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**
+**Current version: 1.4.3**
+
+> **[Download the latest Codex Pulse installer](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
-> If the direct download is unavailable, use the [latest release page](https://github.com/bonkval/ai-tray/releases/latest).
+> If the direct download is unavailable, use the [latest GitHub release](https://github.com/bonkval/ai-tray/releases/latest).
 
 ## Install and run
 
-1. Click **[Download Codex Pulse for Windows](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**.
-2. Double-click the installer to install Codex Pulse.
-3. Leave **Create a desktop shortcut** checked if you want an icon on your desktop.
-4. Finish the installation, then open Codex Pulse from the desktop shortcut or the Start Menu.
+1. Download the **[Codex Pulse installer](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**.
+2. Double-click `Codex-Pulse-Setup.exe` and follow the installer steps.
+3. Leave **Create a desktop shortcut** checked if you want a shortcut on your desktop.
+4. Open Codex Pulse from the desktop shortcut or the Start Menu.
 
-Codex Pulse opens automatically as a small popup. No PowerShell or terminal commands are needed. Make sure you are signed in to Codex so the app can sync your usage.
+Codex Pulse runs as a normal Windows app. No PowerShell, terminal, Node.js, or VS Code setup is required for installed users. Make sure Codex is signed in and active in VS Code so live session data is available.
 
-## Features
+## What the app does
 
 - Shows remaining usage for the rolling 5-hour limit.
-- Shows remaining usage for the 7-day weekly limit.
-- Syncs usage from your local Codex login.
-- Shows token activity for today, the last 7 days, and your lifetime account total when Codex provides it.
-- Includes daily token history with 7-day and 30-day views, highest-day and average-use summaries.
-- Shows live session token counts when the Codex app-server sends active-thread updates.
-- Provides an estimate of when a usage window may be exhausted based on recent activity.
-- Refreshes account usage on the configured interval, while VS Code activity, live session tokens, and today\'s history update within about a second.
-- Sends optional notifications for low limits, daily token targets, and rate-limit resets.
-- Shows healthy, warning, and critical usage states.
-- Stays available while you code in VS Code or other apps.
-- Can be moved anywhere on the screen.
-- Remembers the popup position across restarts and monitors.
-- Minimizes to a compact floating logo and restores when clicked.
-- Includes an optional Codex Pet companion that reads local VS Code Codex session events, types live activity above the minimized logo, and shows a completion badge when work finishes.
+- Shows remaining usage for the rolling 7-day limit.
+- Refreshes account usage on the configured interval.
+- Reads local VS Code Codex session events and updates live activity, token counts, and today's history within about a second.
+- Shows today's tokens, the last 7 days, lifetime tokens, peak daily usage, and usage streaks when available.
+- Includes 7-day and 30-day token history charts with readable dates, highest-use days, averages, and hover details.
+- Shows the current session's input, output, reasoning, and total tokens when Codex provides them.
+- Estimates how long your remaining usage may last based on your recent pace.
+- Shows a Codex Pet companion above the minimized logo while Codex is working and a green completion badge when it finishes.
+- Sends optional notifications for low remaining usage, daily token targets, and rate-limit resets.
+- Shows plan, connection health, last sync time, and reset credits when provided.
 - Supports light, dark, and system themes.
-- Includes settings for refresh interval, startup behavior, notifications, quiet mode, and Codex executable selection.
-- Lets you set a daily token target and export locally stored history as JSON or CSV.
-- Shows plan, connection health, last sync time, and available reset credits when provided.
-- Includes a Windows tray icon for showing, hiding, refreshing, opening Codex, and quitting the app.
-- Can be configured to launch with Windows or run quietly in the tray.
-- Checks GitHub Releases for updates and can install them from the app.
+- Can be moved anywhere and remembers its position across restarts and monitors.
+- Minimizes to a compact floating logo and restores when clicked.
+- Includes a Windows tray menu for showing, hiding, refreshing, opening Codex, and quitting.
+- Can launch with Windows or start quietly in the tray.
+- Exports locally collected token history as JSON or CSV.
+- Checks GitHub Releases for updates.
 
-Codex Pulse does not ask for or store API keys. It uses the existing local Codex session on your computer.
+## Privacy
+
+Codex Pulse does not ask for or store API keys. It uses the existing local Codex login and reads local session records from `%USERPROFILE%\.codex\sessions`. Session data is processed locally and is not uploaded by Codex Pulse.
+
+## Latest release files
+
+For the v1.4.3 GitHub release, upload these files from the project's `dist` folder:
+
+- `Codex-Pulse-Setup.exe` — recommended installer for classmates and other users.
+- `Codex-Pulse-Setup.exe.blockmap` — required for update delivery.
+- `latest.yml` — required by the automatic updater.
+- `Codex-Pulse-1.4.3-x64-tray.exe` — optional portable version.
