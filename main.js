@@ -163,7 +163,7 @@ class CodexUsageClient {
   async readUsage() {
     try {
       await this.start();
-      const result = await this.request('account/rateLimits/read', { excludeResetCreditDetails: true });
+      const result = await this.request('account/rateLimits/read');
       const snapshot = result?.rateLimitsByLimitId?.codex || result?.rateLimits;
       if (!snapshot) throw new Error('Codex did not return a usage snapshot');
       return {
