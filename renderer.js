@@ -84,7 +84,12 @@ function localDateString(date = new Date()) {
 
 function dateLabel(date, range) {
   const parsed = new Date(`${date}T12:00:00`);
-  return range === 7 ? parsed.toLocaleDateString([], { weekday: 'short' }).slice(0, 2) : parsed.toLocaleDateString([], { month: 'numeric', day: 'numeric' });
+  return range === 7 ? parsed.toLocaleDateString([], { weekday: 'short' }).slice(0, 2) : parsed.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function chartDateLabel(date, range) {
+  if (range === 7) return dateLabel(date, range);
+  return String(new Date(`${date}T12:00:00`).getDate());
 }
 
 function getDailyHistory(data) {
@@ -112,20 +117,23 @@ function renderHistory(data) {
     entries.push({ date: key, tokens: history.find((entry) => entry.date === key)?.tokens || 0 });
   }
   const max = Math.max(...entries.map((entry) => entry.tokens), 0);
+  const peak = entries.reduce((best, entry) => !best || entry.tokens > best.tokens ? entry : best, null);
   chart.replaceChildren();
   chart.setAttribute('aria-label', `${selectedHistoryRange}-day token usage history; maximum ${formatTokens(max)} tokens`);
+  $('history-axis-note').textContent = selectedHistoryRange === 30 ? 'Oldest → newest · day of month' : 'Oldest → newest · weekday';
   for (const [index, entry] of entries.entries()) {
     const column = document.createElement('div');
     column.className = 'history-column';
     const bar = document.createElement('div');
     bar.className = 'history-bar';
+    if (peak && peak.tokens > 0 && entry.date === peak.date) bar.classList.add('is-peak');
     bar.title = `${entry.date}: ${formatTokens(entry.tokens)} tokens`;
     const fill = document.createElement('div');
     fill.className = 'history-bar-fill';
     fill.style.setProperty('--bar-height', max && entry.tokens ? `${Math.max(5, entry.tokens / max * 100)}%` : '0%');
     const label = document.createElement('span');
     label.className = 'history-bar-label';
-    label.textContent = selectedHistoryRange === 7 || index % 5 === 0 || index === entries.length - 1 ? dateLabel(entry.date, selectedHistoryRange) : '';
+    label.textContent = selectedHistoryRange === 7 || index % 5 === 0 || index === entries.length - 1 ? chartDateLabel(entry.date, selectedHistoryRange) : '';
     bar.append(fill);
     column.append(bar, label);
     chart.append(column);

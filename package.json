@@ -1,6 +1,6 @@
 {
   "name": "codex-pulse",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "description": "A quiet desktop usage monitor for Codex.",
   "main": "main.js",
   "author": "Codex Pulse",
