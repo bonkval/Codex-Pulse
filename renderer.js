@@ -114,6 +114,8 @@ function renderHistory(data) {
   chart.replaceChildren();
   chart.setAttribute('aria-label', `${selectedHistoryRange}-day token usage history; maximum ${formatTokens(max)} tokens`);
   for (const [index, entry] of entries.entries()) {
+    const column = document.createElement('div');
+    column.className = 'history-column';
     const bar = document.createElement('div');
     bar.className = 'history-bar';
     bar.title = `${entry.date}: ${formatTokens(entry.tokens)} tokens`;
@@ -123,8 +125,9 @@ function renderHistory(data) {
     const label = document.createElement('span');
     label.className = 'history-bar-label';
     label.textContent = selectedHistoryRange === 7 || index % 5 === 0 || index === entries.length - 1 ? dateLabel(entry.date, selectedHistoryRange) : '';
-    bar.append(fill, label);
-    chart.append(bar);
+    bar.append(fill);
+    column.append(bar, label);
+    chart.append(column);
   }
   const nonZero = history.filter((entry) => entry.tokens > 0);
   const highest = nonZero.reduce((best, entry) => !best || entry.tokens > best.tokens ? entry : best, null);
@@ -191,7 +194,9 @@ function renderForecast(data) {
     const estimate = formatEstimate(hours);
     if (estimate) estimates.push(`${label}: ~${estimate} remaining`);
   }
-  $('forecast-text').textContent = estimates.length ? estimates.join(' · ') + ' at the recent rate.' : 'Collecting enough usage samples to estimate your pace.';
+  $('forecast-text').textContent = estimates.length
+    ? estimates.join(' · ') + ' at the recent rate. This is an estimate, not a guaranteed reset time.'
+    : 'Waiting for another sync. The forecast compares how quickly your usage rises with what remains, then estimates when the window could run out.';
 }
 
 function renderPet(activity) {
