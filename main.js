@@ -37,10 +37,12 @@ let isMinimized = false;
 let expandedBounds = null;
 let settings = { ...DEFAULT_SETTINGS };
 let usageHistory = { daily: [], snapshots: [] };
+let historySaveTimer;
 let petExpanded = false;
 let petUnread = false;
 let miniAnchor = null;
 let currentActivity = { state: 'idle', text: 'Waiting for Codex' };
+let latestLiveUsage = null;
 let latestUpdateState = { status: 'checking' };
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -69,6 +71,14 @@ function saveHistory() {
   fs.writeFileSync(historyPath(), JSON.stringify(usageHistory, null, 2));
 }
 
+function saveHistorySoon() {
+  if (historySaveTimer) return;
+  historySaveTimer = setTimeout(() => {
+    historySaveTimer = null;
+    saveHistory();
+  }, 5000);
+}
+
 function mergeDailyHistory(buckets) {
   if (!Array.isArray(buckets)) return;
   const byDate = new Map(usageHistory.daily.map((entry) => [entry.date, entry]));
@@ -80,8 +90,11 @@ function mergeDailyHistory(buckets) {
 }
 
 function addUsageSnapshot(primary, secondary) {
+  const now = Date.now();
+  const latest = usageHistory.snapshots.at(-1);
+  if (latest && now - latest.timestamp < 15000) return;
   usageHistory.snapshots.push({
-    timestamp: Date.now(),
+    timestamp: now,
     primaryUsed: Number.isFinite(Number(primary?.usedPercent)) ? Number(primary.usedPercent) : null,
     secondaryUsed: Number.isFinite(Number(secondary?.usedPercent)) ? Number(secondary.usedPercent) : null,
   });
@@ -154,8 +167,36 @@ function startActivityBridge() {
   activityBridge = new CodexActivityBridge({
     homeDir: app.getPath('home'),
     onActivity: setActivity,
+    onUsage: setLiveUsage,
   });
   activityBridge.start();
+}
+
+function setLiveUsage(usage) {
+  if (!usage || typeof usage !== 'object') return;
+  latestLiveUsage = usage;
+  if (usage.date && Number.isFinite(Number(usage.dailyTokens))) {
+    const byDate = new Map(usageHistory.daily.map((entry) => [entry.date, entry]));
+    const previous = Number(byDate.get(usage.date)?.tokens) || 0;
+    byDate.set(usage.date, { date: usage.date, tokens: Math.max(previous, Number(usage.dailyTokens)) });
+    usageHistory.daily = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90);
+    saveHistorySoon();
+  }
+  if (usage.primary || usage.secondary) {
+    addUsageSnapshot(usage.primary, usage.secondary);
+    saveHistorySoon();
+  }
+  if (popup && !popup.isDestroyed() && !popup.webContents.isLoading()) {
+    popup.webContents.send('usage:live', {
+      liveSession: latestLiveUsage,
+      liveDailyUsage: usage.date ? { date: usage.date, tokens: usage.dailyTokens } : null,
+      localHistory: usageHistory.daily,
+      primary: usage.primary || null,
+      secondary: usage.secondary || null,
+      snapshots: usageHistory.snapshots,
+      updatedAt: Date.now(),
+    });
+  }
 }
 
 function schedulePositionSave() {
@@ -491,7 +532,8 @@ class CodexUsageClient {
         dailyUsageBuckets: tokenResult?.dailyUsageBuckets || null,
         localHistory: usageHistory.daily,
         snapshots: usageHistory.snapshots,
-        liveSession: this.latestTokenUsage,
+        liveSession: latestLiveUsage || this.latestTokenUsage,
+        liveDailyUsage: latestLiveUsage?.date ? { date: latestLiveUsage.date, tokens: latestLiveUsage.dailyTokens } : null,
         activity,
         account: accountResult?.account || null,
         accountAuthRequired: accountResult?.requiresOpenaiAuth ?? null,
@@ -736,5 +778,6 @@ app.on('before-quit', () => {
   clearInterval(pollTimer);
   activityBridge?.stop();
   clearTimeout(positionSaveTimer);
+  clearTimeout(historySaveTimer);
   usageClient.stop();
 });

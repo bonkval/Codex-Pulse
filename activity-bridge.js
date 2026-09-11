@@ -41,6 +41,29 @@ function recordTime(record) {
   return Number.isFinite(timestamp) ? timestamp : Date.now();
 }
 
+function dateKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function number(value) {
+  const result = Number(value);
+  return Number.isFinite(result) ? result : null;
+}
+
+function liveLimit(value) {
+  if (!value || typeof value !== 'object') return null;
+  return {
+    ...value,
+    usedPercent: number(value.used_percent ?? value.usedPercent),
+    windowDurationMins: number(value.window_minutes ?? value.windowDurationMins),
+    resetsAt: number(value.resets_at ?? value.resetsAt),
+  };
+}
+
 function toolActivity(name) {
   if (name === 'exec') return 'Running a command...';
   if (name === 'js') return 'Working with a tool...';
@@ -49,9 +72,10 @@ function toolActivity(name) {
 }
 
 class CodexActivityBridge {
-  constructor({ homeDir, onActivity, intervalMs = 750 } = {}) {
+  constructor({ homeDir, onActivity, onUsage, intervalMs = 750 } = {}) {
     this.root = path.join(homeDir || process.env.USERPROFILE || process.env.HOME || '', '.codex', 'sessions');
     this.onActivity = typeof onActivity === 'function' ? onActivity : () => {};
+    this.onUsage = typeof onUsage === 'function' ? onUsage : () => {};
     this.intervalMs = intervalMs;
     this.timer = null;
     this.filePath = null;
@@ -60,6 +84,10 @@ class CodexActivityBridge {
     this.accepted = false;
     this.activeTask = false;
     this.taskId = null;
+    this.turnUsage = new Map();
+    this.latestUsageSignature = '';
+    this.latestPrimary = null;
+    this.latestSecondary = null;
     this.sessionId = null;
     this.state = IDLE_ACTIVITY.state;
     this.text = IDLE_ACTIVITY.text;
@@ -92,6 +120,10 @@ class CodexActivityBridge {
     this.accepted = false;
     this.activeTask = false;
     this.taskId = null;
+    this.turnUsage.clear();
+    this.latestUsageSignature = '';
+    this.latestPrimary = null;
+    this.latestSecondary = null;
     this.sessionId = null;
     this.state = IDLE_ACTIVITY.state;
     this.text = IDLE_ACTIVITY.text;
@@ -130,6 +162,75 @@ class CodexActivityBridge {
     if (labels[type]) this.emit('working', labels[type], timestamp);
   }
 
+  processTokenCount(record, timestamp) {
+    const info = record?.payload?.info || {};
+    const usage = info.last_token_usage || info.lastTokenUsage;
+    if (!usage) return;
+    const inputTokens = number(usage.input_tokens ?? usage.inputTokens);
+    const outputTokens = number(usage.output_tokens ?? usage.outputTokens);
+    const reasoningTokens = number(usage.reasoning_output_tokens ?? usage.reasoningTokens ?? usage.reasoning);
+    const totalTokens = number(usage.total_tokens ?? usage.totalTokens);
+    const turnKey = this.taskId || `session:${this.sessionId || 'current'}`;
+    const day = dateKey(timestamp);
+    const usageKey = `${day}:${turnKey}`;
+    if (totalTokens !== null) this.turnUsage.set(usageKey, Math.max(this.turnUsage.get(usageKey) || 0, totalTokens));
+    const dailyTokens = [...this.turnUsage.entries()]
+      .filter(([key]) => key.startsWith(`${day}:`))
+      .reduce((sum, [, value]) => sum + value, 0);
+    const primary = liveLimit(record.payload.rate_limits?.primary || record.payload.rateLimits?.primary);
+    const secondary = liveLimit(record.payload.rate_limits?.secondary || record.payload.rateLimits?.secondary);
+    if (primary) this.latestPrimary = primary;
+    if (secondary) this.latestSecondary = secondary;
+    const next = {
+      inputTokens,
+      outputTokens,
+      reasoningTokens,
+      totalTokens,
+      dailyTokens,
+      date: day,
+      primary: this.latestPrimary,
+      secondary: this.latestSecondary,
+      sessionId: this.sessionId,
+      threadId: this.taskId,
+      updatedAt: timestamp,
+    };
+    const signature = JSON.stringify(next);
+    if (signature === this.latestUsageSignature) return;
+    this.latestUsageSignature = signature;
+    this.onUsage(next);
+  }
+
+  processTokenUsageRecord(record, timestamp) {
+    const payload = record.payload || {};
+    const usage = payload.turn_token_usage || payload.turnTokenUsage;
+    const totalTokens = number(usage?.total_tokens ?? usage?.totalTokens);
+    if (totalTokens === null) return;
+    const day = dateKey(timestamp);
+    const turnKey = payload.turn_id || payload.turnId || this.taskId || `session:${this.sessionId || 'current'}`;
+    const usageKey = `${day}:${turnKey}`;
+    this.turnUsage.set(usageKey, Math.max(this.turnUsage.get(usageKey) || 0, totalTokens));
+    const dailyTokens = [...this.turnUsage.entries()]
+      .filter(([key]) => key.startsWith(`${day}:`))
+      .reduce((sum, [, value]) => sum + value, 0);
+    const next = {
+      inputTokens: number(usage.input_tokens ?? usage.inputTokens),
+      outputTokens: number(usage.output_tokens ?? usage.outputTokens),
+      reasoningTokens: number(usage.reasoning_output_tokens ?? usage.reasoningTokens ?? usage.reasoning),
+      totalTokens,
+      dailyTokens,
+      date: day,
+      primary: this.latestPrimary,
+      secondary: this.latestSecondary,
+      sessionId: this.sessionId,
+      threadId: turnKey,
+      updatedAt: timestamp,
+    };
+    const signature = JSON.stringify(next);
+    if (signature === this.latestUsageSignature) return;
+    this.latestUsageSignature = signature;
+    this.onUsage(next);
+  }
+
   processRecord(record) {
     if (!record || typeof record !== 'object') return;
     const timestamp = recordTime(record);
@@ -142,6 +243,11 @@ class CodexActivityBridge {
     if (!this.accepted) return;
     if (record.type === 'event_msg') {
       this.processEvent(record, timestamp);
+      if (record.payload?.type === 'token_count') this.processTokenCount(record, timestamp);
+      return;
+    }
+    if (record.type === 'token_usage_record') {
+      this.processTokenUsageRecord(record, timestamp);
       return;
     }
     if (record.type !== 'response_item' || !this.activeTask) return;

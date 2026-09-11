@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('codexPulse', {
   downloadUpdate: () => ipcRenderer.invoke('app:download-update'),
   installUpdate: () => ipcRenderer.invoke('app:install-update'),
   onRefresh: (callback) => ipcRenderer.on('usage:refresh', callback),
+  onLiveUsage: (callback) => ipcRenderer.on('usage:live', (_event, usage) => callback(usage)),
   onSettingsOpen: (callback) => ipcRenderer.on('settings:open', callback),
   onUpdate: (callback) => ipcRenderer.on('update:state', (_event, state) => callback(state)),
   onViewChange: (callback) => ipcRenderer.on('window:view', (_event, view) => callback(view)),

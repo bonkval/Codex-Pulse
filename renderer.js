@@ -123,6 +123,10 @@ function getDailyHistory(data) {
   const byDate = new Map();
   for (const entry of data.localHistory || []) if (entry && entry.date) byDate.set(entry.date, numeric(entry.tokens) || 0);
   for (const entry of data.dailyUsageBuckets || []) if (entry && entry.startDate) byDate.set(entry.startDate, numeric(entry.tokens) || 0);
+  if (data.liveDailyUsage?.date) {
+    const liveTokens = numeric(data.liveDailyUsage.tokens);
+    if (liveTokens !== null) byDate.set(data.liveDailyUsage.date, Math.max(byDate.get(data.liveDailyUsage.date) || 0, liveTokens));
+  }
   return [...byDate.entries()].map(([date, tokens]) => ({ date, tokens })).sort((a, b) => a.date.localeCompare(b.date));
 }
 
@@ -363,6 +367,23 @@ function renderUsage(data) {
   checkNotifications(data, today);
 }
 
+function renderLiveUsage(update) {
+  if (!update || !currentUsage) return;
+  currentUsage = {
+    ...currentUsage,
+    liveSession: update.liveSession || currentUsage.liveSession,
+    liveDailyUsage: update.liveDailyUsage || currentUsage.liveDailyUsage,
+    localHistory: update.localHistory || currentUsage.localHistory,
+    snapshots: update.snapshots || currentUsage.snapshots,
+    primary: update.primary || currentUsage.primary,
+    secondary: update.secondary || currentUsage.secondary,
+  };
+  const today = renderTokenActivity(currentUsage);
+  renderLiveSession(currentUsage);
+  renderForecast(currentUsage);
+  window.codexPulse.updateTray({ primary: remainingPercent(currentUsage.primary), secondary: remainingPercent(currentUsage.secondary), todayTokens: today });
+}
+
 async function refresh() {
   if (loading) return;
   loading = true;
@@ -424,6 +445,7 @@ $('codex-button').addEventListener('click', () => window.codexPulse.openCodex())
 miniView.addEventListener('click', () => { if (suppressMiniClick) { suppressMiniClick = false; return; } window.codexPulse.clearPet(); window.codexPulse.setView(false); });
 document.addEventListener('pointerdown', (event) => { if (!historyChart.contains(event.target)) hideHistoryTooltip(true); });
 window.codexPulse.onRefresh(refresh);
+window.codexPulse.onLiveUsage(renderLiveUsage);
 window.codexPulse.onSettingsOpen(openSettings);
 window.codexPulse.onUpdate(renderUpdateState);
 window.codexPulse.onPetActivity(renderPet);

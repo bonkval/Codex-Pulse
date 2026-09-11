@@ -105,19 +105,17 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .mini-view:focus-visible { border-radius: 14px; box-shadow: inset 0 0 0 2px var(--accent); }
 .mini-shell { width: 100%; height: 100%; display: grid; place-items: center; }
 .mini-logo { width: 31px; height: 31px; display: block; color: #252525; fill: currentColor; transform: translateY(-1px); }
-.pet-bubble { position: absolute; z-index: 8; top: 8px; right: 8px; left: 8px; min-height: 68px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 5px; padding: 12px 15px 13px; border: 1px solid rgba(37,37,37,.18); border-radius: 16px; color: var(--ink); background: var(--surface); box-shadow: 0 10px 24px rgba(37,37,37,.2), inset 0 1px 0 rgba(255,255,255,.38); text-align: left; }
+.pet-bubble { position: absolute; z-index: 8; top: 8px; right: 8px; left: 8px; min-height: 68px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 10px 16px 12px; border: 1px solid rgba(37,37,37,.18); border-radius: 16px; color: var(--ink); background: var(--surface); box-shadow: 0 10px 24px rgba(37,37,37,.2), inset 0 1px 0 rgba(255,255,255,.38); text-align: center; }
 .pet-bubble::after { content: ''; position: absolute; right: 50%; bottom: -7px; width: 12px; height: 12px; border-right: 1px solid rgba(37,37,37,.18); border-bottom: 1px solid rgba(37,37,37,.18); background: var(--surface); transform: translateX(50%) rotate(45deg); }
-.pet-kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font: 800 9px/1 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: .14em; }
-.pet-kicker::before { content: ''; width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: #7b9c83; box-shadow: 0 0 0 3px rgba(123,156,131,.16); }
-.pet-message { display: -webkit-box; width: 100%; overflow: hidden; color: var(--ink); font: 700 13px/1.25 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: -.01em; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.pet-badge { position: absolute; z-index: 3; right: calc(50% - 30px); bottom: 35px; width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid var(--surface); border-radius: 50%; color: #fff; background: #d84b4b; font: 800 10px "Cascadia Mono", Consolas, monospace; box-shadow: 0 3px 8px rgba(37,37,37,.22); }
+.pet-kicker { display: block; color: var(--muted); font: 800 8px/1 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: .13em; text-align: center; }
+.pet-message { display: -webkit-box; width: 100%; overflow: hidden; color: var(--ink); font: 700 13px/1.25 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: -.01em; text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.pet-badge { position: absolute; z-index: 3; right: calc(50% - 30px); bottom: 35px; width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid var(--surface); border-radius: 50%; color: #fff; background: #4f9b68; font: 800 10px "Cascadia Mono", Consolas, monospace; box-shadow: 0 3px 8px rgba(37,37,37,.22); }
 body[data-view="mini"][data-pet-expanded="true"] .card { overflow: visible; background: transparent; border: 0; clip-path: none; box-shadow: none; }
 body[data-view="mini"][data-pet-expanded="true"] .card::after { display: none; }
 body[data-view="mini"][data-pet-expanded="true"] .mini-view { display: block; overflow: visible; }
 body[data-view="mini"][data-pet-expanded="true"] .mini-shell { position: absolute; left: 50%; bottom: 0; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 6px 16px rgba(37,37,37,.16); transform: translateX(-50%); }
-body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-bubble { border-color: rgba(216,75,75,.48); }
-body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-kicker::before { background: #d84b4b; box-shadow: 0 0 0 3px rgba(216,75,75,.16); }
-body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-kicker { color: #b34a45; }
+body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-bubble { border-color: rgba(79,155,104,.54); }
+body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-kicker { color: #3f7e53; }
 body[data-view="mini"][data-pet-expanded="true"][data-pet-state="working"] .pet-message::after { content: '\u2588'; display: inline-block; margin-left: 2px; animation: blink 1s steps(2, jump-none) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
 .icon-button:focus-visible, .text-button:focus-visible, .mini-view:focus-visible, .back-button:focus-visible, .small-button:focus-visible, .secondary-button:focus-visible, .segment-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -179,8 +177,7 @@ body[data-theme="dark"] .moon-icon { display: block; }
 body[data-theme="dark"] .pet-bubble { border-color: rgba(255,255,255,.16); box-shadow: 0 10px 24px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.06); }
 body[data-theme="dark"] .pet-bubble::after { border-color: rgba(255,255,255,.16); }
 body[data-theme="dark"] .pet-kicker { color: #aaa7a1; }
-body[data-theme="dark"] .pet-kicker::before { background: #93b39a; box-shadow: 0 0 0 3px rgba(147,179,154,.14); }
-body[data-theme="dark"][data-pet-state="done"] .pet-kicker { color: #e48578; }
+body[data-theme="dark"][data-pet-state="done"] .pet-kicker { color: #8fc19b; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }

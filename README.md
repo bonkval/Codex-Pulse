@@ -24,7 +24,7 @@ Codex Pulse opens automatically as a small popup. No PowerShell or terminal comm
 - Includes daily token history with 7-day and 30-day views, highest-day and average-use summaries.
 - Shows live session token counts when the Codex app-server sends active-thread updates.
 - Provides an estimate of when a usage window may be exhausted based on recent activity.
-- Refreshes usage automatically every 30 seconds and includes a manual refresh button.
+- Refreshes account usage on the configured interval, while VS Code activity, live session tokens, and today\'s history update within about a second.
 - Sends optional notifications for low limits, daily token targets, and rate-limit resets.
 - Shows healthy, warning, and critical usage states.
 - Stays available while you code in VS Code or other apps.

@@ -26,3 +26,30 @@ test('bridges an active VS Code Codex session and completion', () => {
   bridge.stop();
   fs.rmSync(homeDir, { recursive: true, force: true });
 });
+
+test('bridges live token counts and rate limits from the VS Code session', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-pulse-'));
+  const sessionDir = path.join(homeDir, '.codex', 'sessions', '2026', '09', '11');
+  fs.mkdirSync(sessionDir, { recursive: true });
+  const sessionPath = path.join(sessionDir, 'rollout-token-test.jsonl');
+  const timestamp = new Date().toISOString();
+  const tokenPayload = {
+    type: 'token_count',
+    info: { last_token_usage: { input_tokens: 120, output_tokens: 30, reasoning_output_tokens: 10, total_tokens: 160 } },
+    rate_limits: { primary: { used_percent: 12 }, secondary: { used_percent: 4 } },
+  };
+  fs.writeFileSync(sessionPath, [
+    JSON.stringify({ timestamp, type: 'session_meta', payload: { source: 'vscode', session_id: 'token-session' } }),
+    JSON.stringify({ timestamp, type: 'event_msg', payload: { type: 'task_started', turn_id: 'token-turn' } }),
+    JSON.stringify({ timestamp, type: 'event_msg', payload: tokenPayload }),
+    '',
+  ].join('\n'));
+  const usage = [];
+  const bridge = new CodexActivityBridge({ homeDir, onUsage: (value) => usage.push(value) });
+  bridge.poll();
+  assert.equal(usage.at(-1).totalTokens, 160);
+  assert.equal(usage.at(-1).dailyTokens, 160);
+  assert.equal(usage.at(-1).primary.used_percent, 12);
+  bridge.stop();
+  fs.rmSync(homeDir, { recursive: true, force: true });
+});
