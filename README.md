@@ -26,11 +26,15 @@ Codex Pulse runs as a normal Windows app. No PowerShell, terminal, Node.js, or V
 - Shows today's tokens, the last 7 days, lifetime tokens, peak daily usage, and usage streaks when available.
 - Includes 7-day and 30-day token history charts with readable dates, highest-use days, averages, and hover details.
 - Shows the current session's input, output, reasoning, and total tokens when Codex provides them.
+- Scans local VS Code session metadata to show recent sessions, project totals, and model totals without storing prompt or response text.
+- Includes a 90-day activity calendar and actionable pacing guidance with recent usage rate, safe pace, and reset comparison.
 - Estimates how long your remaining usage may last based on your recent pace.
 - Shows a Codex Pet companion above the minimized logo while Codex is working and a green completion badge when it finishes.
-- Sends optional notifications for low remaining usage, daily token targets, and rate-limit resets.
+- Sends configurable notifications for separate 5-hour and weekly thresholds, quiet hours, active-only mode, daily token targets, and rate-limit resets.
+- Provides connection diagnostics, a clipboard-ready report, notification snoozing, and local history clear/backup/restore controls.
 - Shows plan, connection health, last sync time, and reset credits when provided.
 - Supports light, dark, and system themes.
+- Supports compact mode, adjustable popup size and opacity, always-on-top, start minimized, pause monitoring, and per-monitor positions.
 - Can be moved anywhere and remembers its position across restarts and monitors.
 - Minimizes to a compact floating logo and restores when clicked.
 - Includes a Windows tray menu for showing, hiding, refreshing, opening Codex, and quitting.

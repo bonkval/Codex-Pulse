@@ -373,6 +373,11 @@ function updateTrayTooltip(data) {
 
 function showUsageNotification(data) {
   if (!settings.notificationsEnabled || !Notification.isSupported()) return false;
+  if (data?.kind === 'test') {
+    const notification = new Notification({ title: 'Codex Pulse notifications are working', body: 'You will be notified according to your alert settings.', silent: true });
+    notification.on('click', showPopup); notification.show();
+    return true;
+  }
   if (data?.kind === 'token-target') {
     const notification = new Notification({ title: 'Codex daily target reached', body: `Today\'s token activity reached ${Number(data.target).toLocaleString()} tokens.`, silent: true });
     notification.on('click', showPopup); notification.show();
@@ -509,6 +514,7 @@ function runDiagnostics() {
     { label: 'Session directory', ok: sessionDirectoryExists, detail: sessionsDirectory },
     { label: 'Session directory readable', ok: sessionDirectoryReadable, detail: sessionDirectoryReadable ? 'Readable' : 'Permission denied or unavailable' },
     { label: 'Codex app-server', ok: Boolean(usageClient.ready), detail: usageClient.ready ? 'Connected' : 'Not connected yet' },
+    { label: 'Codex authentication', ok: usageClient.lastAccountAuthRequired !== true, detail: usageClient.lastAccountAuthRequired === true ? 'Sign-in required' : 'No sign-in error reported' },
     { label: 'VS Code activity bridge', ok: Boolean(activityBridge && !settings.monitoringPaused), detail: settings.monitoringPaused ? 'Paused' : 'Running' },
   ];
   const report = [
@@ -563,6 +569,7 @@ class CodexUsageClient {
     this.startPromise = null;
     this.ready = false;
     this.latestTokenUsage = null;
+    this.lastAccountAuthRequired = null;
   }
 
   async start() {
@@ -684,6 +691,7 @@ class CodexUsageClient {
         this.request('account/usage/read').catch(() => null),
         this.request('account/read', { refreshToken: false }).catch(() => null),
       ]);
+      this.lastAccountAuthRequired = accountResult?.requiresOpenaiAuth ?? null;
       const activity = currentActivity;
       latestAnalytics = scanSessionAnalytics(path.join(app.getPath('home'), '.codex', 'sessions'), { retentionDays: retentionDays() });
       mergeDailyHistory(tokenResult?.dailyUsageBuckets);
@@ -733,13 +741,14 @@ function positionPopup() {
   if (!popup) return;
   const display = screen.getPrimaryDisplay();
   const { x, y, width, height } = display.workArea;
+  const size = getWindowSize();
   const saved = settings.rememberPerMonitor ? settings.positions[String(display.id)] || settings.position : settings.position;
   if (saved && isPositionVisible(saved.x, saved.y)) {
     const position = clampPosition(saved.x, saved.y);
     popup.setPosition(position.x, position.y, false);
     return;
   }
-  const position = clampPosition(x + width - WINDOW_WIDTH - EDGE_GAP, y + height - WINDOW_HEIGHT - EDGE_GAP);
+  const position = clampPosition(x + width - size.width - EDGE_GAP, y + height - size.height - EDGE_GAP);
   popup.setPosition(position.x, position.y, false);
 }
 
@@ -753,7 +762,7 @@ function showPopup() {
     }
   }
   app.focus({ steal: true });
-  popup.setAlwaysOnTop(true, 'screen-saver');
+  popup.setAlwaysOnTop(settings.alwaysOnTop, 'screen-saver');
   popup.show();
   popup.focus();
   popup.moveTop();
@@ -957,7 +966,7 @@ app.whenReady().then(() => {
   ipcMain.handle('notifications:snooze', (_event, minutes = 60) => {
     settings.notificationSnoozeUntil = Date.now() + Math.max(1, Number(minutes) || 60) * 60000;
     saveSettings();
-    return { ...settings };
+    return { ...settings, globalShortcutError };
   });
   ipcMain.handle('diagnostics:run', () => runDiagnostics());
   ipcMain.handle('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });

@@ -22,6 +22,7 @@
     "files": [
       "main.js",
       "activity-bridge.js",
+      "session-analytics.js",
       "preload.js",
       "usage-logic.js",
       "index.html",

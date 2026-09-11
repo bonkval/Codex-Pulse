@@ -87,10 +87,35 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .session-grid > div { display: grid; gap: 3px; }
 .session-grid strong { color: var(--ink); font: 700 12px "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
 .forecast-text { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
+.forecast-detail { margin: 0; color: var(--ink); font: 700 9px/1.35 "Cascadia Mono", Consolas, monospace; }
 .forecast-help { margin: 6px 0 0; color: var(--faint); font-size: 9px; line-height: 1.35; }
 .estimate-badge { color: var(--accent) !important; }
 .account-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 14px; color: var(--faint); font-size: 9px; }
 .account-grid strong { float: right; max-width: 70%; overflow: hidden; color: var(--ink); font: 700 9px "Cascadia Mono", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.rank-list { display: grid; gap: 6px; }
+.rank-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
+.rank-item-main { min-width: 0; display: grid; gap: 3px; }
+.rank-item-name { overflow: hidden; color: var(--ink); font-size: 10px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.rank-item-meta { overflow: hidden; color: var(--faint); font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.rank-item-value { color: var(--ink); font: 700 10px "Cascadia Mono", Consolas, monospace; }
+.empty-state { color: var(--faint); font-size: 9px; font-weight: 600; }
+.heatmap { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); grid-auto-rows: 10px; gap: 3px; }
+.heatmap-cell { display: block; min-width: 0; height: 10px; border-radius: 2px; background: var(--accent-soft); }
+.heatmap-cell.level-0 { opacity: .35; }
+.heatmap-cell.level-1 { opacity: .5; background: #8aa88f; }
+.heatmap-cell.level-2 { opacity: .7; background: #5f946d; }
+.heatmap-cell.level-3 { opacity: .85; background: #3f7e53; }
+.heatmap-cell.level-4 { opacity: 1; background: #245d36; }
+.heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: var(--faint); font-size: 8px; font-weight: 600; }
+.heatmap-legend .heatmap-cell { width: 10px; flex: 0 0 10px; }
+.session-history { display: grid; gap: 6px; max-height: 240px; overflow: hidden; }
+.session-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 7px 8px; border-left: 2px solid var(--accent); background: var(--surface-raised); }
+.session-item[data-status="Complete"] { border-left-color: #4f9b68; }
+.session-item[data-status="Stopped"] { border-left-color: #bd5e52; }
+.session-item-main { min-width: 0; display: grid; gap: 3px; }
+.session-item-project { overflow: hidden; color: var(--ink); font-size: 9px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.session-item-meta { overflow: hidden; color: var(--faint); font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.session-item-value { color: var(--ink); font: 700 9px "Cascadia Mono", Consolas, monospace; text-align: right; }
 
 .footer { position: absolute; z-index: 4; right: 22px; bottom: 16px; left: 22px; min-height: 34px; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); }
 .footer-actions { display: flex; align-items: center; gap: 12px; }
@@ -144,6 +169,18 @@ body[data-view="mini"][data-pet-expanded="true"][data-pet-state="working"] .pet-
 .shortcut-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .setting-hint { margin-top: -5px; color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
 .setting-hint.is-error { color: var(--danger, #b33b36); }
+.settings-subsection, .diagnostics-settings { display: grid; gap: 5px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.settings-subsection > strong, .diagnostics-settings > strong { font-size: 11px; font-weight: 750; }
+.settings-subsection > small, .diagnostics-settings > small { color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
+.threshold-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 3px; }
+.threshold-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.threshold-grid label > span { color: var(--ink); font-size: 10px; }
+.threshold-grid label div { display: flex; align-items: center; gap: 4px; }
+.threshold-toggle { width: 13px; height: 13px; margin: 0; accent-color: var(--accent); }
+.time-row { display: flex; gap: 10px; padding: 0 0 5px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.time-row label { display: flex; align-items: center; gap: 5px; }
+.time-row input { padding: 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--surface); font: 600 10px "Segoe UI Variable", "Segoe UI", sans-serif; }
+.diagnostics-result { color: var(--muted); font-size: 9px; line-height: 1.35; white-space: pre-line; }
 .setting-row select:focus-visible, .number-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .setting-toggle input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
 .path-row { cursor: default; }
@@ -159,6 +196,7 @@ body[data-view="mini"] .card { padding: 0; border-radius: 14px; border: 0; clip-
 body[data-view="mini"] .card::after { display: none; }
 body[data-view="mini"] .topbar, body[data-view="mini"] .dashboard-scroll, body[data-view="mini"] .footer, body[data-view="mini"] .settings-panel { display: none; }
 body[data-view="mini"] .mini-view { display: grid; }
+body[data-compact="true"] .analytics-section, body[data-compact="true"] .history-section, body[data-compact="true"] [aria-labelledby="session-title"], body[data-compact="true"] [aria-labelledby="forecast-title"], body[data-compact="true"] [aria-labelledby="account-title"] { display: none; }
 
 body[data-theme="dark"] { color-scheme: dark; --ink: #f4f1ec; --muted: #a7a49e; --faint: #77746f; --surface: #171819; --surface-raised: rgba(255,255,255,.035); --line: rgba(255,255,255,.11); --accent: #c9c7c1; --accent-soft: rgba(201,199,193,.16); --track: #292a2c; }
 body[data-theme="dark"] .card { border-color: rgba(255,255,255,.13); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }

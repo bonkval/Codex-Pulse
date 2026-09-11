@@ -30,7 +30,7 @@ let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let activeHistoryBar = null;
 let historyTooltipPinned = false;
 let suppressMiniClick = false;
-let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P' };
+let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], quietHoursEnabled: false, quietHoursStart: '22:00', quietHoursEnd: '08:00', notifyOnlyWhenActive: false, notificationSnoozeUntil: 0, alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
 const notificationLevels = { primary: null, secondary: null };
 
 function effectiveTheme(theme) {
@@ -79,6 +79,11 @@ function formatWindow(window) {
 
 function formatTime(timestamp) {
   return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function formatDateTime(timestamp) {
+  if (!timestamp) return dash;
+  return new Date(timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }
 
 function localDateString(date = new Date()) {
@@ -133,6 +138,51 @@ function getDailyHistory(data) {
 function todayTokensFrom(data, history) {
   const today = history.find((entry) => entry.date === localDateString());
   return today ? today.tokens : null;
+}
+
+function renderAnalytics(data) {
+  const analytics = data.analytics || {};
+  const sessions = Array.isArray(analytics.sessions) ? analytics.sessions : [];
+  const projects = Array.isArray(analytics.projects) ? analytics.projects : [];
+  const models = Array.isArray(analytics.models) ? analytics.models : [];
+  const recentCutoff = Date.now() - 7 * 86400000;
+  const recentProjects = projects.map((project) => ({ ...project, totalTokens: sessions.filter((session) => session.project === project.name && session.startedAt >= recentCutoff).reduce((sum, session) => sum + Number(session.totalTokens || 0), 0) })).filter((project) => project.totalTokens > 0).sort((a, b) => b.totalTokens - a.totalTokens).slice(0, 5);
+  const renderRank = (target, entries, valueLabel) => {
+    target.replaceChildren();
+    if (!entries.length) { const empty = document.createElement('span'); empty.className = 'empty-state'; empty.textContent = target.id === 'model-list' ? 'Model data will appear when Codex provides it.' : 'No project sessions found yet.'; target.append(empty); return; }
+    for (const entry of entries) {
+      const item = document.createElement('div'); item.className = 'rank-item';
+      const main = document.createElement('div'); main.className = 'rank-item-main';
+      const name = document.createElement('span'); name.className = 'rank-item-name'; name.textContent = entry.name;
+      const meta = document.createElement('span'); meta.className = 'rank-item-meta'; meta.textContent = `${entry.sessions} session${entry.sessions === 1 ? '' : 's'}${entry.inputTokens !== undefined ? ` · in ${formatTokens(entry.inputTokens)} · out ${formatTokens(entry.outputTokens)} · reasoning ${formatTokens(entry.reasoningTokens)}` : ''}`;
+      main.append(name, meta); const value = document.createElement('span'); value.className = 'rank-item-value'; value.textContent = `${formatTokens(entry.totalTokens)} ${valueLabel}`; item.append(main, value); target.append(item);
+    }
+  };
+  renderRank($('project-list'), recentProjects, 'tokens');
+  renderRank($('model-list'), models.slice(0, 5), 'tokens');
+
+  const history = getDailyHistory(data);
+  const byDate = new Map(history.map((entry) => [entry.date, entry.tokens]));
+  const values = [...byDate.values()];
+  const max = Math.max(...values, 0);
+  const heatmap = $('heatmap'); heatmap.replaceChildren();
+  for (let offset = 89; offset >= 0; offset -= 1) {
+    const date = new Date(); date.setHours(12, 0, 0, 0); date.setDate(date.getDate() - offset);
+    const key = localDateString(date); const tokens = byDate.get(key) || 0;
+    const cell = document.createElement('i'); cell.className = 'heatmap-cell';
+    const level = !tokens || !max ? 0 : Math.min(4, Math.ceil(tokens / max * 4));
+    cell.classList.add(`level-${level}`); cell.title = `${fullDateLabel(key)}: ${formatTokens(tokens)} tokens`; cell.setAttribute('aria-label', cell.title); heatmap.append(cell);
+  }
+
+  const sessionHistory = $('session-history'); sessionHistory.replaceChildren();
+  if (!sessions.length) { const empty = document.createElement('span'); empty.className = 'empty-state'; empty.textContent = 'No recent sessions found.'; sessionHistory.append(empty); }
+  else for (const session of sessions.slice(0, 8)) {
+    const item = document.createElement('div'); item.className = 'session-item'; item.dataset.status = session.status;
+    const main = document.createElement('div'); main.className = 'session-item-main';
+    const project = document.createElement('span'); project.className = 'session-item-project'; project.textContent = `${session.project} · ${session.status}`;
+    const meta = document.createElement('span'); meta.className = 'session-item-meta'; meta.textContent = `${formatDateTime(session.startedAt)} · ${session.durationMinutes || 0}m · ${session.turns || 0} turn${session.turns === 1 ? '' : 's'}`;
+    main.append(project, meta); const value = document.createElement('span'); value.className = 'session-item-value'; value.textContent = `${formatTokens(session.totalTokens)}\nin ${formatTokens(session.inputTokens)} / out ${formatTokens(session.outputTokens)}`; item.append(main, value); sessionHistory.append(item);
+  }
 }
 
 function renderHistory(data) {
@@ -198,6 +248,7 @@ function renderTokenActivity(data) {
   $('current-streak').textContent = numeric(activity.currentStreakDays) === null ? dash : `${Math.round(activity.currentStreakDays)}d`;
   $('token-range-label').textContent = data.dailyUsageBuckets ? 'Synced from Codex' : 'Local history';
   renderHistory(data);
+  renderAnalytics(data);
   return today;
 }
 
@@ -234,18 +285,30 @@ function renderForecast(data) {
   const current = snapshots[snapshots.length - 1];
   const previous = snapshots.slice(0, -1).reverse().find((entry) => entry.primaryUsed !== null || entry.secondaryUsed !== null);
   const estimates = [];
+  const details = [];
   for (const [label, key] of [['5-hour', 'primaryUsed'], ['Weekly', 'secondaryUsed']]) {
     const used = numeric(current?.[key]);
     const old = numeric(previous?.[key]);
-    const hours = previous && current && old !== null && used !== null && used > old
-      ? (100 - used) / ((used - old) / ((current.timestamp - previous.timestamp) / 3600000))
-      : null;
+    const elapsedHours = previous && current ? (current.timestamp - previous.timestamp) / 3600000 : 0;
+    const rate = elapsedHours > 0 && old !== null && used !== null && used > old ? (used - old) / elapsedHours : null;
+    const hours = rate ? (100 - used) / rate : null;
     const estimate = formatEstimate(hours);
     if (estimate) estimates.push(`${label}: ~${estimate} remaining`);
+    const window = label === '5-hour' ? data.primary : data.secondary;
+    const resetHours = numeric(window?.resetsAt) ? Math.max(0, (Number(window.resetsAt) * 1000 - Date.now()) / 3600000) : null;
+    if (rate && resetHours && resetHours > 0) {
+      const safeRate = Math.max(0, (100 - used) / resetHours);
+      details.push(`${label}: ${rate.toFixed(1)}%/h used · safe pace ${safeRate.toFixed(1)}%/h · ${hours > resetHours ? 'likely to last until reset' : 'may run out before reset'}`);
+    }
   }
   $('forecast-text').textContent = estimates.length
     ? estimates.join(' · ') + ' at the recent rate. This is an estimate, not a guaranteed reset time.'
     : 'Waiting for another sync. The forecast compares how quickly your usage rises with what remains, then estimates when the window could run out.';
+  const sessions = Array.isArray(data.analytics?.sessions) ? data.analytics.sessions.filter((session) => Number(session.durationMinutes) > 0 && Number(session.totalTokens) > 0).slice(0, 5) : [];
+  const sessionMinutes = sessions.reduce((sum, session) => sum + Number(session.durationMinutes || 0), 0);
+  const tokenHours = sessionMinutes ? sessions.reduce((sum, session) => sum + Number(session.totalTokens || 0), 0) / (sessionMinutes / 60) : 0;
+  if (tokenHours) details.push(`Recent activity: ${formatTokens(tokenHours)} tokens/hour`);
+  $('forecast-detail').textContent = details.join(' · ');
 }
 
 function renderPet(activity) {
@@ -283,8 +346,8 @@ function renderPet(activity) {
 function renderAccount(data) {
   const account = data.account || {};
   $('account-plan').textContent = data.planType || account.planType || dash;
-  $('account-status').textContent = data.ok ? (account.type ? 'Connected' : 'Live') : 'Unavailable';
-  $('account-health').textContent = data.ok ? 'Healthy' : 'Offline';
+  $('account-status').textContent = data.ok ? (account.type ? 'Connected' : 'Live') : (data.error || 'Unavailable');
+  $('account-health').textContent = data.ok ? (data.diagnostics?.monitoringPaused ? 'Paused' : 'Healthy') : 'Offline';
   $('account-sync').textContent = data.updatedAt ? formatTime(data.updatedAt) : dash;
   $('reset-credits').textContent = data.resetCredits && numeric(data.resetCredits.availableCount) !== null ? String(Math.round(data.resetCredits.availableCount)) : dash;
 }
@@ -294,7 +357,9 @@ function clearDashboard() {
   $('session-status').textContent = 'Waiting for Codex';
   $('account-health').textContent = 'Offline';
   $('forecast-text').textContent = 'Connect to Codex to estimate your usage pace.';
+  $('forecast-detail').textContent = '';
   renderHistory({ localHistory: [] });
+  renderAnalytics({ localHistory: [] });
 }
 
 function setRow(prefix, window) {
@@ -313,24 +378,44 @@ function refreshResetLabels() {
   $('secondary-reset').textContent = formatReset(currentUsage.secondary && currentUsage.secondary.resetsAt);
 }
 
+function withinQuietHours() {
+  if (!settings.quietHoursEnabled) return false;
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+  const [startHour, startMinute] = String(settings.quietHoursStart || '22:00').split(':').map(Number);
+  const [endHour, endMinute] = String(settings.quietHoursEnd || '08:00').split(':').map(Number);
+  const start = startHour * 60 + startMinute;
+  const end = endHour * 60 + endMinute;
+  return start === end ? true : (start < end ? minutes >= start && minutes < end : minutes >= start || minutes < end);
+}
+
+function notificationsSuppressed(data) {
+  return !settings.notificationsEnabled || Date.now() < Number(settings.notificationSnoozeUntil || 0) || withinQuietHours() || (settings.notifyOnlyWhenActive && data?.activity?.state !== 'working');
+}
+
+function notificationThreshold(percent, thresholds) {
+  if (percent === null || !Array.isArray(thresholds)) return null;
+  return [...thresholds].sort((a, b) => b - a).find((threshold) => percent <= threshold) ?? null;
+}
+
 function checkNotifications(data, today) {
   const values = { primary: remainingPercent(data.primary), secondary: remainingPercent(data.secondary) };
   const crossed = Object.entries(values).some(([prefix, percent]) => {
-    const nextLevel = thresholdFor(percent);
+    const nextLevel = notificationThreshold(percent, settings[`${prefix}AlertThresholds`]);
     const previousLevel = notificationLevels[prefix];
     notificationLevels[prefix] = nextLevel;
     return nextLevel !== null && (previousLevel !== null && previousLevel !== undefined) && nextLevel < previousLevel;
   });
-  if (crossed && settings.notificationsEnabled) window.codexPulse.showNotification(values);
+  if (crossed && !notificationsSuppressed(data)) window.codexPulse.showNotification({ ...values, activity: data.activity });
   for (const [prefix, value] of Object.entries(data)) {
     if (!['primary', 'secondary'].includes(prefix)) continue;
     const reset = numeric(value?.resetsAt);
     const oldReset = previousResetTimes[prefix];
-    if (settings.notificationsEnabled && reset && oldReset && reset !== oldReset && reset * 1000 <= Date.now() + 120000) window.codexPulse.showNotification({ kind: 'rate-reset', label: prefix === 'primary' ? '5-hour window' : 'Weekly window' });
+    if (!notificationsSuppressed(data) && reset && oldReset && reset !== oldReset && reset * 1000 <= Date.now() + 120000) window.codexPulse.showNotification({ kind: 'rate-reset', label: prefix === 'primary' ? '5-hour window' : 'Weekly window' });
     previousResetTimes[prefix] = reset;
   }
   const target = numeric(settings.dailyTokenTarget);
-  if (target && today !== null && (lastTodayTokens === null || lastTodayTokens < target) && today >= target && settings.notificationsEnabled) window.codexPulse.showNotification({ kind: 'token-target', target });
+  if (target && today !== null && (lastTodayTokens === null || lastTodayTokens < target) && today >= target && !notificationsSuppressed(data)) window.codexPulse.showNotification({ kind: 'token-target', target });
   if (today !== null) lastTodayTokens = today;
 }
 
@@ -363,7 +448,7 @@ function renderUsage(data) {
   $('updated-label').textContent = 'Updated ' + formatTime(data.updatedAt);
   renderPet(data.activity);
   refreshResetLabels();
-  window.codexPulse.updateTray({ primary: remainingPercent(data.primary), secondary: remainingPercent(data.secondary), todayTokens: today });
+  window.codexPulse.updateTray({ primary: remainingPercent(data.primary), secondary: remainingPercent(data.secondary), todayTokens: today, activity: data.activity });
   checkNotifications(data, today);
 }
 
@@ -377,11 +462,13 @@ function renderLiveUsage(update) {
     snapshots: update.snapshots || currentUsage.snapshots,
     primary: update.primary || currentUsage.primary,
     secondary: update.secondary || currentUsage.secondary,
+    analytics: update.analytics || currentUsage.analytics,
+    activity: update.activity || currentUsage.activity,
   };
   const today = renderTokenActivity(currentUsage);
   renderLiveSession(currentUsage);
   renderForecast(currentUsage);
-  window.codexPulse.updateTray({ primary: remainingPercent(currentUsage.primary), secondary: remainingPercent(currentUsage.secondary), todayTokens: today });
+  window.codexPulse.updateTray({ primary: remainingPercent(currentUsage.primary), secondary: remainingPercent(currentUsage.secondary), todayTokens: today, activity: currentUsage.activity });
 }
 
 async function refresh() {
@@ -404,6 +491,20 @@ function updateSettingsPanel(next) {
   $('pet-toggle').checked = settings.petEnabled !== false;
   $('daily-target-input').value = settings.dailyTokenTarget || '';
   $('codex-path-label').textContent = settings.codexPath || 'Automatically detected';
+  document.body.dataset.compact = settings.compactMode ? 'true' : 'false';
+  $('quiet-hours-toggle').checked = settings.quietHoursEnabled;
+  $('quiet-hours-start').value = settings.quietHoursStart;
+  $('quiet-hours-end').value = settings.quietHoursEnd;
+  $('active-only-toggle').checked = settings.notifyOnlyWhenActive;
+  $('popup-size-select').value = settings.popupSize;
+  $('opacity-select').value = String(settings.popupOpacity);
+  $('always-on-top-toggle').checked = settings.alwaysOnTop;
+  $('compact-mode-toggle').checked = settings.compactMode;
+  $('start-minimized-toggle').checked = settings.startMinimized;
+  $('pause-monitoring-toggle').checked = settings.monitoringPaused;
+  $('per-monitor-toggle').checked = settings.rememberPerMonitor;
+  $('retention-select').value = String(settings.historyRetentionDays);
+  for (const input of document.querySelectorAll('.threshold-toggle')) input.checked = (settings[`${input.dataset.window}AlertThresholds`] || []).includes(Number(input.dataset.threshold));
   $('shortcut-input').value = displayShortcut(settings.globalShortcut);
   $('shortcut-status').textContent = next.globalShortcutError || (settings.globalShortcut ? 'Global shortcut is active while Codex Pulse is running.' : 'Global shortcut is disabled.');
   $('shortcut-status').classList.toggle('is-error', Boolean(next.globalShortcutError));
@@ -461,6 +562,31 @@ $('notifications-toggle').addEventListener('change', (event) => saveSetting({ no
 $('quiet-toggle').addEventListener('change', (event) => saveSetting({ quietMode: event.target.checked }));
 $('pet-toggle').addEventListener('change', (event) => saveSetting({ petEnabled: event.target.checked }));
 $('daily-target-input').addEventListener('change', (event) => saveSetting({ dailyTokenTarget: event.target.value }));
+$('quiet-hours-toggle').addEventListener('change', (event) => saveSetting({ quietHoursEnabled: event.target.checked }));
+$('quiet-hours-start').addEventListener('change', (event) => saveSetting({ quietHoursStart: event.target.value }));
+$('quiet-hours-end').addEventListener('change', (event) => saveSetting({ quietHoursEnd: event.target.value }));
+$('active-only-toggle').addEventListener('change', (event) => saveSetting({ notifyOnlyWhenActive: event.target.checked }));
+$('popup-size-select').addEventListener('change', (event) => saveSetting({ popupSize: event.target.value }));
+$('opacity-select').addEventListener('change', (event) => saveSetting({ popupOpacity: Number(event.target.value) }));
+$('always-on-top-toggle').addEventListener('change', (event) => saveSetting({ alwaysOnTop: event.target.checked }));
+$('compact-mode-toggle').addEventListener('change', (event) => saveSetting({ compactMode: event.target.checked }));
+$('start-minimized-toggle').addEventListener('change', (event) => saveSetting({ startMinimized: event.target.checked }));
+$('pause-monitoring-toggle').addEventListener('change', (event) => saveSetting({ monitoringPaused: event.target.checked }));
+$('per-monitor-toggle').addEventListener('change', (event) => saveSetting({ rememberPerMonitor: event.target.checked }));
+$('retention-select').addEventListener('change', (event) => saveSetting({ historyRetentionDays: Number(event.target.value) }));
+document.querySelectorAll('.threshold-toggle').forEach((input) => input.addEventListener('change', () => {
+  const primaryAlertThresholds = [...document.querySelectorAll('.threshold-toggle[data-window="primary"]:checked')].map((element) => Number(element.dataset.threshold));
+  const secondaryAlertThresholds = [...document.querySelectorAll('.threshold-toggle[data-window="secondary"]:checked')].map((element) => Number(element.dataset.threshold));
+  saveSetting({ primaryAlertThresholds, secondaryAlertThresholds });
+}));
+$('test-notification-button').addEventListener('click', () => window.codexPulse.showNotification({ kind: 'test' }));
+$('snooze-button').addEventListener('click', async () => { updateSettingsPanel(await window.codexPulse.snoozeNotifications(60)); });
+$('import-button').addEventListener('click', async () => { const result = await window.codexPulse.importHistory(); if (result.imported) refresh(); });
+$('clear-history-button').addEventListener('click', async () => { const result = await window.codexPulse.clearHistory(); if (result.cleared) refresh(); });
+$('diagnostics-button').addEventListener('click', async () => {
+  const result = await window.codexPulse.runDiagnostics();
+  $('diagnostics-result').textContent = result.checks.map((check) => `${check.ok ? '✓' : '!' } ${check.label}: ${check.detail}`).join('\n') + '\nCopied to clipboard.';
+});
 $('shortcut-input').addEventListener('keydown', async (event) => {
   event.preventDefault();
   const shortcut = shortcutFromEvent(event);
