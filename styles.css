@@ -138,6 +138,12 @@ body[data-view="mini"][data-pet-expanded="true"][data-pet-state="working"] .pet-
 .setting-row small, .setting-toggle small, .export-settings small { color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
 .setting-row select, .number-input { min-width: 112px; padding: 6px 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font: 600 10px "Segoe UI Variable", "Segoe UI", sans-serif; cursor: pointer; }
 .number-input { width: 112px; min-width: 112px; cursor: text; }
+.shortcut-row { align-items: flex-start; }
+.shortcut-control { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+.shortcut-input { width: 142px; min-width: 0; padding: 6px 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font: 600 10px "Segoe UI Variable", "Segoe UI", sans-serif; cursor: pointer; }
+.shortcut-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.setting-hint { margin-top: -5px; color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
+.setting-hint.is-error { color: var(--danger, #b33b36); }
 .setting-row select:focus-visible, .number-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .setting-toggle input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
 .path-row { cursor: default; }

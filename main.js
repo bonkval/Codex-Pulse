@@ -1,12 +1,14 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, screen, shell, ipcMain, dialog, Notification } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, screen, shell, ipcMain, dialog, Notification, globalShortcut, clipboard } = require('electron');
 const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
 const { CodexActivityBridge } = require('./activity-bridge');
+const { scanSessionAnalytics } = require('./session-analytics');
 
 const WINDOW_WIDTH = 420;
 const WINDOW_HEIGHT = 620;
+const WINDOW_SIZES = { small: { width: 380, height: 560 }, normal: { width: 420, height: 620 }, large: { width: 480, height: 700 } };
 const MINI_WIDTH = 48;
 const MINI_HEIGHT = 48;
 const PET_WIDTH = 240;
@@ -24,6 +26,23 @@ const DEFAULT_SETTINGS = {
   quietMode: false,
   dailyTokenTarget: 0,
   petEnabled: true,
+  globalShortcut: 'CommandOrControl+Shift+Alt+P',
+  primaryAlertThresholds: [50, 25, 10],
+  secondaryAlertThresholds: [50, 25, 10],
+  quietHoursEnabled: false,
+  quietHoursStart: '22:00',
+  quietHoursEnd: '08:00',
+  notifyOnlyWhenActive: false,
+  notificationSnoozeUntil: 0,
+  alwaysOnTop: true,
+  popupOpacity: 100,
+  popupSize: 'normal',
+  compactMode: false,
+  startMinimized: false,
+  monitoringPaused: false,
+  historyRetentionDays: 90,
+  rememberPerMonitor: false,
+  positions: {},
   position: null,
 };
 
@@ -44,7 +63,25 @@ let miniAnchor = null;
 let currentActivity = { state: 'idle', text: 'Waiting for Codex' };
 let latestLiveUsage = null;
 let latestUpdateState = { status: 'checking' };
+let registeredGlobalShortcut = null;
+let globalShortcutError = null;
+let latestAnalytics = { sessions: [], projects: [], models: [] };
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
+
+function getWindowSize() {
+  return WINDOW_SIZES[settings.popupSize] || WINDOW_SIZES.normal;
+}
+
+function retentionDays() {
+  const value = Number(settings.historyRetentionDays);
+  return [30, 90, 365].includes(value) ? value : 90;
+}
+
+function trimHistory() {
+  const cutoff = Date.now() - retentionDays() * 86400000;
+  usageHistory.daily = usageHistory.daily.filter((entry) => Date.parse(`${entry.date}T23:59:59`) >= cutoff).slice(-365);
+  usageHistory.snapshots = usageHistory.snapshots.filter((entry) => entry.timestamp >= cutoff).slice(-5000);
+}
 
 function settingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
@@ -61,12 +98,14 @@ function loadHistory() {
       daily: Array.isArray(saved.daily) ? saved.daily.filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && Number.isFinite(Number(entry.tokens))) : [],
       snapshots: Array.isArray(saved.snapshots) ? saved.snapshots.filter((entry) => entry && Number.isFinite(Number(entry.timestamp))) : [],
     };
+    trimHistory();
   } catch (_) {
     usageHistory = { daily: [], snapshots: [] };
   }
 }
 
 function saveHistory() {
+  trimHistory();
   fs.mkdirSync(app.getPath('userData'), { recursive: true });
   fs.writeFileSync(historyPath(), JSON.stringify(usageHistory, null, 2));
 }
@@ -86,7 +125,7 @@ function mergeDailyHistory(buckets) {
     if (!bucket || !/^\d{4}-\d{2}-\d{2}$/.test(bucket.startDate) || !Number.isFinite(Number(bucket.tokens))) continue;
     byDate.set(bucket.startDate, { date: bucket.startDate, tokens: Math.max(0, Number(bucket.tokens)) });
   }
-  usageHistory.daily = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90);
+  usageHistory.daily = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-365);
 }
 
 function addUsageSnapshot(primary, secondary) {
@@ -98,7 +137,7 @@ function addUsageSnapshot(primary, secondary) {
     primaryUsed: Number.isFinite(Number(primary?.usedPercent)) ? Number(primary.usedPercent) : null,
     secondaryUsed: Number.isFinite(Number(secondary?.usedPercent)) ? Number(secondary.usedPercent) : null,
   });
-  usageHistory.snapshots = usageHistory.snapshots.filter((entry) => entry.timestamp > Date.now() - 7 * 24 * 60 * 60 * 1000).slice(-1000);
+  usageHistory.snapshots = usageHistory.snapshots.filter((entry) => entry.timestamp > Date.now() - retentionDays() * 24 * 60 * 60 * 1000).slice(-5000);
 }
 
 function loadSettings() {
@@ -110,6 +149,23 @@ function loadSettings() {
       refreshInterval: [15, 30, 60].includes(Number(saved.refreshInterval)) ? Number(saved.refreshInterval) : DEFAULT_SETTINGS.refreshInterval,
       theme: ['system', 'light', 'dark'].includes(saved.theme) ? saved.theme : DEFAULT_SETTINGS.theme,
       dailyTokenTarget: Number.isFinite(Number(saved.dailyTokenTarget)) ? Math.max(0, Math.min(1000000000, Math.round(Number(saved.dailyTokenTarget)))) : DEFAULT_SETTINGS.dailyTokenTarget,
+      globalShortcut: typeof saved.globalShortcut === 'string' ? saved.globalShortcut.trim() : DEFAULT_SETTINGS.globalShortcut,
+      primaryAlertThresholds: Array.isArray(saved.primaryAlertThresholds) ? saved.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value)) : DEFAULT_SETTINGS.primaryAlertThresholds,
+      secondaryAlertThresholds: Array.isArray(saved.secondaryAlertThresholds) ? saved.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value)) : DEFAULT_SETTINGS.secondaryAlertThresholds,
+      quietHoursEnabled: Boolean(saved.quietHoursEnabled),
+      quietHoursStart: /^\d{2}:\d{2}$/.test(saved.quietHoursStart) ? saved.quietHoursStart : DEFAULT_SETTINGS.quietHoursStart,
+      quietHoursEnd: /^\d{2}:\d{2}$/.test(saved.quietHoursEnd) ? saved.quietHoursEnd : DEFAULT_SETTINGS.quietHoursEnd,
+      notifyOnlyWhenActive: Boolean(saved.notifyOnlyWhenActive),
+      notificationSnoozeUntil: Number.isFinite(Number(saved.notificationSnoozeUntil)) ? Number(saved.notificationSnoozeUntil) : 0,
+      alwaysOnTop: saved.alwaysOnTop !== false,
+      popupOpacity: [70, 85, 100].includes(Number(saved.popupOpacity)) ? Number(saved.popupOpacity) : DEFAULT_SETTINGS.popupOpacity,
+      popupSize: Object.prototype.hasOwnProperty.call(WINDOW_SIZES, saved.popupSize) ? saved.popupSize : DEFAULT_SETTINGS.popupSize,
+      compactMode: Boolean(saved.compactMode),
+      startMinimized: Boolean(saved.startMinimized),
+      monitoringPaused: Boolean(saved.monitoringPaused),
+      historyRetentionDays: [30, 90, 365].includes(Number(saved.historyRetentionDays)) ? Number(saved.historyRetentionDays) : DEFAULT_SETTINGS.historyRetentionDays,
+      rememberPerMonitor: Boolean(saved.rememberPerMonitor),
+      positions: saved.positions && typeof saved.positions === 'object' ? saved.positions : {},
       position: saved.position && Number.isFinite(Number(saved.position.x)) && Number.isFinite(Number(saved.position.y))
         ? { x: Number(saved.position.x), y: Number(saved.position.y) }
         : null,
@@ -117,6 +173,38 @@ function loadSettings() {
   } catch (_) {
     settings = { ...DEFAULT_SETTINGS };
   }
+}
+
+function togglePopup() {
+  if (!popup || popup.isDestroyed()) return;
+  if (popup.isVisible()) popup.hide();
+  else showPopup();
+}
+
+function registerGlobalShortcut(accelerator) {
+  const nextShortcut = typeof accelerator === 'string' ? accelerator.trim() : '';
+  if (registeredGlobalShortcut === nextShortcut) {
+    globalShortcutError = null;
+    return { ok: true };
+  }
+
+  if (registeredGlobalShortcut) globalShortcut.unregister(registeredGlobalShortcut);
+  registeredGlobalShortcut = null;
+  globalShortcutError = null;
+
+  if (!nextShortcut) return { ok: true };
+  try {
+    if (globalShortcut.register(nextShortcut, togglePopup)) {
+      registeredGlobalShortcut = nextShortcut;
+      return { ok: true };
+    }
+  } catch (_) {
+    globalShortcutError = 'That shortcut is not supported.';
+    return { ok: false, error: globalShortcutError };
+  }
+
+  globalShortcutError = 'That shortcut is already in use by another application.';
+  return { ok: false, error: globalShortcutError };
 }
 
 function saveSettings() {
@@ -133,6 +221,21 @@ function updateSettings(patch) {
   if (typeof patch.notificationsEnabled === 'boolean') settings.notificationsEnabled = patch.notificationsEnabled;
   if (typeof patch.quietMode === 'boolean') settings.quietMode = patch.quietMode;
   if (typeof patch.petEnabled === 'boolean') settings.petEnabled = patch.petEnabled;
+  if (Array.isArray(patch.primaryAlertThresholds)) settings.primaryAlertThresholds = patch.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
+  if (Array.isArray(patch.secondaryAlertThresholds)) settings.secondaryAlertThresholds = patch.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
+  if (typeof patch.quietHoursEnabled === 'boolean') settings.quietHoursEnabled = patch.quietHoursEnabled;
+  if (typeof patch.quietHoursStart === 'string' && /^\d{2}:\d{2}$/.test(patch.quietHoursStart)) settings.quietHoursStart = patch.quietHoursStart;
+  if (typeof patch.quietHoursEnd === 'string' && /^\d{2}:\d{2}$/.test(patch.quietHoursEnd)) settings.quietHoursEnd = patch.quietHoursEnd;
+  if (typeof patch.notifyOnlyWhenActive === 'boolean') settings.notifyOnlyWhenActive = patch.notifyOnlyWhenActive;
+  if (Number.isFinite(Number(patch.notificationSnoozeUntil))) settings.notificationSnoozeUntil = Math.max(0, Number(patch.notificationSnoozeUntil));
+  if (typeof patch.alwaysOnTop === 'boolean') settings.alwaysOnTop = patch.alwaysOnTop;
+  if ([70, 85, 100].includes(Number(patch.popupOpacity))) settings.popupOpacity = Number(patch.popupOpacity);
+  if (Object.prototype.hasOwnProperty.call(WINDOW_SIZES, patch.popupSize)) settings.popupSize = patch.popupSize;
+  if (typeof patch.compactMode === 'boolean') settings.compactMode = patch.compactMode;
+  if (typeof patch.startMinimized === 'boolean') settings.startMinimized = patch.startMinimized;
+  if (typeof patch.monitoringPaused === 'boolean') settings.monitoringPaused = patch.monitoringPaused;
+  if ([30, 90, 365].includes(Number(patch.historyRetentionDays))) settings.historyRetentionDays = Number(patch.historyRetentionDays);
+  if (typeof patch.rememberPerMonitor === 'boolean') settings.rememberPerMonitor = patch.rememberPerMonitor;
   if (Object.prototype.hasOwnProperty.call(patch, 'dailyTokenTarget')) {
     if (patch.dailyTokenTarget === '' || patch.dailyTokenTarget === null || patch.dailyTokenTarget === undefined) settings.dailyTokenTarget = 0;
     else if (Number.isFinite(Number(patch.dailyTokenTarget))) settings.dailyTokenTarget = Math.max(0, Math.min(1000000000, Math.round(Number(patch.dailyTokenTarget))));
@@ -143,12 +246,37 @@ function updateSettings(patch) {
 
 function commitSettings(patch) {
   const previous = { ...settings };
+  let shortcutResult = { ok: true };
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'globalShortcut')) {
+    const requested = typeof patch.globalShortcut === 'string' ? patch.globalShortcut.trim() : '';
+    if (requested !== settings.globalShortcut) {
+      const previousShortcut = settings.globalShortcut;
+      shortcutResult = registerGlobalShortcut(requested);
+      if (shortcutResult.ok) settings.globalShortcut = requested;
+      else {
+        registerGlobalShortcut(previousShortcut);
+        globalShortcutError = shortcutResult.error;
+      }
+    }
+  }
   const next = updateSettings(patch);
   if (previous.launchAtStartup !== next.launchAtStartup) applyStartupSetting();
   if (previous.refreshInterval !== next.refreshInterval) startPolling();
   if (previous.codexPath !== next.codexPath) usageClient.stop();
   if (previous.petEnabled !== next.petEnabled) setPetExpanded(next.petEnabled && currentActivity.state !== 'idle');
-  return next;
+  if (previous.alwaysOnTop !== next.alwaysOnTop) popup?.setAlwaysOnTop(next.alwaysOnTop, 'screen-saver');
+  if (previous.popupOpacity !== next.popupOpacity) popup?.setOpacity(next.popupOpacity / 100);
+  if (previous.popupSize !== next.popupSize && popup && !popup.isDestroyed() && !isMinimized) {
+    const size = getWindowSize();
+    const bounds = popup.getBounds();
+    popup.setBounds({ ...clampPosition(bounds.x, bounds.y), width: size.width, height: size.height }, false);
+  }
+  if (previous.historyRetentionDays !== next.historyRetentionDays) { trimHistory(); saveHistory(); }
+  if (previous.monitoringPaused !== next.monitoringPaused) {
+    if (next.monitoringPaused) activityBridge?.stop();
+    else startActivityBridge();
+  }
+  return { ...next, globalShortcutError };
 }
 
 function applyStartupSetting() {
@@ -157,6 +285,7 @@ function applyStartupSetting() {
 
 function startPolling() {
   clearInterval(pollTimer);
+  if (settings.monitoringPaused) return;
   pollTimer = setInterval(() => {
     if (popup && !popup.isDestroyed()) popup.webContents.send('usage:refresh');
   }, settings.refreshInterval * 1000);
@@ -164,6 +293,7 @@ function startPolling() {
 
 function startActivityBridge() {
   activityBridge?.stop();
+  if (settings.monitoringPaused) return;
   activityBridge = new CodexActivityBridge({
     homeDir: app.getPath('home'),
     onActivity: setActivity,
@@ -194,6 +324,8 @@ function setLiveUsage(usage) {
       primary: usage.primary || null,
       secondary: usage.secondary || null,
       snapshots: usageHistory.snapshots,
+      analytics: latestAnalytics,
+      activity: currentActivity,
       updatedAt: Date.now(),
     });
   }
@@ -213,6 +345,10 @@ function schedulePositionSave() {
       return;
     }
     settings.position = { x: bounds.x, y: bounds.y };
+    if (settings.rememberPerMonitor) {
+      const display = screen.getDisplayMatching(bounds);
+      settings.positions[String(display.id)] = { x: bounds.x, y: bounds.y };
+    }
     saveSettings();
   }, 250);
 }
@@ -231,17 +367,20 @@ function updateTrayTooltip(data) {
   const primary = Number.isFinite(Number(data?.primary)) ? `${Math.round(Number(data.primary))}%` : '-';
   const secondary = Number.isFinite(Number(data?.secondary)) ? `${Math.round(Number(data.secondary))}%` : '-';
   const today = Number.isFinite(Number(data?.todayTokens)) ? `${Math.round(Number(data.todayTokens)).toLocaleString()} tokens` : '-';
-  tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}`);
+  const active = data?.activity?.state === 'working' ? ` - ${data.activity.text || 'Codex working'}` : '';
+  tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}${active}`);
 }
 
 function showUsageNotification(data) {
   if (!settings.notificationsEnabled || !Notification.isSupported()) return false;
   if (data?.kind === 'token-target') {
-    new Notification({ title: 'Codex daily target reached', body: `Today\'s token activity reached ${Number(data.target).toLocaleString()} tokens.`, silent: true }).show();
+    const notification = new Notification({ title: 'Codex daily target reached', body: `Today\'s token activity reached ${Number(data.target).toLocaleString()} tokens.`, silent: true });
+    notification.on('click', showPopup); notification.show();
     return true;
   }
   if (data?.kind === 'rate-reset') {
-    new Notification({ title: 'Codex limit reset', body: `${data.label || 'A usage window'} is available again.`, silent: true }).show();
+    const notification = new Notification({ title: 'Codex limit reset', body: `${data.label || 'A usage window'} is available again.`, silent: true });
+    notification.on('click', showPopup); notification.show();
     return true;
   }
   const primary = data?.primary === null || data?.primary === undefined || data?.primary === '' ? null : Number(data.primary);
@@ -254,7 +393,8 @@ function showUsageNotification(data) {
   const lowest = windows[0];
   const title = lowest.value <= 10 ? 'Codex usage is very low' : 'Codex usage is getting low';
   const body = windows.map(({ label, value }) => `${label}: ${Math.round(value)}% remaining`).join(' · ');
-  new Notification({ title, body, silent: true }).show();
+  const notification = new Notification({ title, body, silent: true });
+  notification.on('click', showPopup); notification.show();
   return true;
 }
 
@@ -303,9 +443,10 @@ function isPositionVisible(x, y) {
 function clampPosition(x, y) {
   const display = screen.getDisplayMatching({ x, y, width: MINI_WIDTH, height: MINI_HEIGHT });
   const { workArea } = display;
+  const size = getWindowSize();
   return {
-    x: Math.max(workArea.x + EDGE_GAP, Math.min(x, workArea.x + workArea.width - WINDOW_WIDTH - EDGE_GAP)),
-    y: Math.max(workArea.y + EDGE_GAP, Math.min(y, workArea.y + workArea.height - WINDOW_HEIGHT - EDGE_GAP)),
+    x: Math.max(workArea.x + EDGE_GAP, Math.min(x, workArea.x + workArea.width - size.width - EDGE_GAP)),
+    y: Math.max(workArea.y + EDGE_GAP, Math.min(y, workArea.y + workArea.height - size.height - EDGE_GAP)),
   };
 }
 
@@ -355,6 +496,34 @@ function resolveCodexCommand() {
   }
   if (candidates.length) return candidates[candidates.length - 1];
   return 'codex';
+}
+
+function runDiagnostics() {
+  const codexCommand = resolveCodexCommand();
+  const sessionsDirectory = path.join(app.getPath('home'), '.codex', 'sessions');
+  const commandExists = codexCommand !== 'codex' || fs.existsSync(codexCommand);
+  const sessionDirectoryExists = fs.existsSync(sessionsDirectory);
+  const sessionDirectoryReadable = safeReadableDirectory(sessionsDirectory);
+  const checks = [
+    { label: 'Codex executable', ok: commandExists, detail: codexCommand },
+    { label: 'Session directory', ok: sessionDirectoryExists, detail: sessionsDirectory },
+    { label: 'Session directory readable', ok: sessionDirectoryReadable, detail: sessionDirectoryReadable ? 'Readable' : 'Permission denied or unavailable' },
+    { label: 'Codex app-server', ok: Boolean(usageClient.ready), detail: usageClient.ready ? 'Connected' : 'Not connected yet' },
+    { label: 'VS Code activity bridge', ok: Boolean(activityBridge && !settings.monitoringPaused), detail: settings.monitoringPaused ? 'Paused' : 'Running' },
+  ];
+  const report = [
+    'Codex Pulse diagnostics',
+    `Generated: ${new Date().toISOString()}`,
+    `Version: ${app.getVersion()}`,
+    `Platform: ${process.platform} ${process.arch}`,
+    ...checks.map((check) => `${check.ok ? 'PASS' : 'WARN'} - ${check.label}: ${check.detail}`),
+  ].join('\n');
+  clipboard.writeText(report);
+  return { checks, report };
+}
+
+function safeReadableDirectory(directory) {
+  try { fs.readdirSync(directory); return true; } catch (_) { return false; }
 }
 
 function setActivity(next) {
@@ -516,6 +685,7 @@ class CodexUsageClient {
         this.request('account/read', { refreshToken: false }).catch(() => null),
       ]);
       const activity = currentActivity;
+      latestAnalytics = scanSessionAnalytics(path.join(app.getPath('home'), '.codex', 'sessions'), { retentionDays: retentionDays() });
       mergeDailyHistory(tokenResult?.dailyUsageBuckets);
       addUsageSnapshot(snapshot.primary, snapshot.secondary);
       saveHistory();
@@ -532,12 +702,14 @@ class CodexUsageClient {
         dailyUsageBuckets: tokenResult?.dailyUsageBuckets || null,
         localHistory: usageHistory.daily,
         snapshots: usageHistory.snapshots,
+        analytics: latestAnalytics,
         liveSession: latestLiveUsage || this.latestTokenUsage,
         liveDailyUsage: latestLiveUsage?.date ? { date: latestLiveUsage.date, tokens: latestLiveUsage.dailyTokens } : null,
         activity,
         account: accountResult?.account || null,
         accountAuthRequired: accountResult?.requiresOpenaiAuth ?? null,
         updatedAt: Date.now(),
+        diagnostics: { sessionDirectory: path.join(app.getPath('home'), '.codex', 'sessions'), monitoringPaused: settings.monitoringPaused },
       };
     } catch (error) {
       this.stop();
@@ -561,7 +733,7 @@ function positionPopup() {
   if (!popup) return;
   const display = screen.getPrimaryDisplay();
   const { x, y, width, height } = display.workArea;
-  const saved = settings.position;
+  const saved = settings.rememberPerMonitor ? settings.positions[String(display.id)] || settings.position : settings.position;
   if (saved && isPositionVisible(saved.x, saved.y)) {
     const position = clampPosition(saved.x, saved.y);
     popup.setPosition(position.x, position.y, false);
@@ -575,8 +747,9 @@ function showPopup() {
   if (!popup || popup.isDestroyed()) return;
   if (!isMinimized) {
     const bounds = popup.getBounds();
-    if (bounds.width !== WINDOW_WIDTH || bounds.height !== WINDOW_HEIGHT) {
-      popup.setBounds({ x: bounds.x, y: bounds.y, width: WINDOW_WIDTH, height: WINDOW_HEIGHT }, false);
+    const size = getWindowSize();
+    if (bounds.width !== size.width || bounds.height !== size.height) {
+      popup.setBounds({ x: bounds.x, y: bounds.y, width: size.width, height: size.height }, false);
     }
   }
   app.focus({ steal: true });
@@ -604,11 +777,12 @@ function setPopupView(minimized) {
     popup.setBounds({ ...miniAnchor, width: MINI_WIDTH, height: MINI_HEIGHT }, false);
   } else {
     const restoreBounds = expandedBounds || bounds;
+    const size = getWindowSize();
     popup.setBounds({
       x: restoreBounds.x,
       y: restoreBounds.y,
-      width: WINDOW_WIDTH,
-      height: WINDOW_HEIGHT,
+      width: size.width,
+      height: size.height,
     }, false);
     expandedBounds = null;
     miniAnchor = null;
@@ -623,18 +797,19 @@ function setPopupView(minimized) {
 }
 
 function createWindow() {
+  const size = getWindowSize();
   popup = new BrowserWindow({
-    width: WINDOW_WIDTH,
-    height: WINDOW_HEIGHT,
+    width: size.width,
+    height: size.height,
     minWidth: MINI_WIDTH,
-    maxWidth: WINDOW_WIDTH,
+    maxWidth: size.width,
     minHeight: MINI_HEIGHT,
-    maxHeight: WINDOW_HEIGHT,
+    maxHeight: size.height,
     frame: false,
     transparent: true,
     resizable: false,
     movable: true,
-    alwaysOnTop: true,
+    alwaysOnTop: settings.alwaysOnTop,
     skipTaskbar: true,
     show: false,
     icon: path.join(__dirname, 'assets', 'icon.png'),
@@ -645,11 +820,13 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  popup.setAlwaysOnTop(true, 'screen-saver');
+  popup.setAlwaysOnTop(settings.alwaysOnTop, 'screen-saver');
+  popup.setOpacity(settings.popupOpacity / 100);
   positionPopup();
   popup.loadFile(path.join(__dirname, 'index.html'));
   const revealPopup = () => {
     if (popup.isDestroyed() || process.argv.includes('--hidden') || settings.quietMode) return;
+    if (settings.startMinimized && !isMinimized) setPopupView(true);
     showPopup();
   };
   if (!process.argv.includes('--hidden') && !settings.quietMode) {
@@ -697,6 +874,7 @@ if (!hasSingleInstanceLock) {
 app.whenReady().then(() => {
   loadSettings();
   loadHistory();
+  registerGlobalShortcut(settings.globalShortcut);
   applyStartupSetting();
   app.setAppUserModelId('com.codexpulse.desktop');
   createWindow();
@@ -706,7 +884,7 @@ app.whenReady().then(() => {
   ipcMain.handle('app:show', () => showPopup());
   ipcMain.handle('app:set-view', (_event, minimized) => setPopupView(Boolean(minimized)));
   ipcMain.handle('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
-  ipcMain.handle('settings:read', () => ({ ...settings }));
+  ipcMain.handle('settings:read', () => ({ ...settings, globalShortcutError }));
   ipcMain.handle('settings:update', (_event, patch) => commitSettings(patch));
   ipcMain.handle('settings:choose-codex', async () => {
     const result = await dialog.showOpenDialog(popup, {
@@ -735,15 +913,53 @@ app.whenReady().then(() => {
     const daily = usageHistory.daily;
     const content = extension === 'csv'
       ? ['date,tokens', ...daily.map((entry) => `${entry.date},${entry.tokens}`)].join('\n')
-      : JSON.stringify({ exportedAt: new Date().toISOString(), daily }, null, 2);
+      : JSON.stringify({ version: 2, exportedAt: new Date().toISOString(), daily, snapshots: usageHistory.snapshots, analytics: latestAnalytics }, null, 2);
     fs.writeFileSync(result.filePath, content, 'utf8');
     return { canceled: false, path: result.filePath };
+  });
+  ipcMain.handle('history:import', async () => {
+    const result = await dialog.showOpenDialog(popup, {
+      title: 'Import Codex Pulse history backup',
+      properties: ['openFile'],
+      filters: [{ name: 'JSON backup', extensions: ['json'] }],
+    });
+    if (result.canceled || !result.filePaths[0]) return { canceled: true };
+    try {
+      const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
+      if (!Array.isArray(imported.daily) && !Array.isArray(imported.snapshots)) throw new Error('This file is not a Codex Pulse history backup.');
+      if (Array.isArray(imported.daily)) usageHistory.daily = imported.daily.filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && Number.isFinite(Number(entry.tokens))).map((entry) => ({ date: entry.date, tokens: Math.max(0, Number(entry.tokens)) }));
+      if (Array.isArray(imported.snapshots)) usageHistory.snapshots = imported.snapshots.filter((entry) => entry && Number.isFinite(Number(entry.timestamp)));
+      saveHistory();
+      return { canceled: false, imported: true };
+    } catch (error) {
+      return { canceled: false, imported: false, error: error.message || 'Unable to import history.' };
+    }
+  });
+  ipcMain.handle('history:clear', async () => {
+    const result = await dialog.showMessageBox(popup, {
+      type: 'warning',
+      buttons: ['Cancel', 'Clear local history'],
+      defaultId: 0,
+      cancelId: 0,
+      title: 'Clear Codex Pulse history?',
+      message: 'This removes only Codex Pulse\'s local history. Codex session files will not be changed.',
+    });
+    if (result.response !== 1) return { cleared: false };
+    usageHistory = { daily: [], snapshots: [] };
+    saveHistory();
+    return { cleared: true };
   });
   ipcMain.handle('tray:update', (_event, data) => {
     updateTrayTooltip(data);
     return true;
   });
   ipcMain.handle('notifications:show', (_event, data) => showUsageNotification(data));
+  ipcMain.handle('notifications:snooze', (_event, minutes = 60) => {
+    settings.notificationSnoozeUntil = Date.now() + Math.max(1, Number(minutes) || 60) * 60000;
+    saveSettings();
+    return { ...settings };
+  });
+  ipcMain.handle('diagnostics:run', () => runDiagnostics());
   ipcMain.handle('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });
   ipcMain.handle('pet:clear', () => { clearPetNotification(); return true; });
   ipcMain.handle('app:check-updates', () => checkForUpdates());
@@ -780,4 +996,6 @@ app.on('before-quit', () => {
   clearTimeout(positionSaveTimer);
   clearTimeout(historySaveTimer);
   usageClient.stop();
+  globalShortcut.unregisterAll();
+  registeredGlobalShortcut = null;
 });

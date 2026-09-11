@@ -61,6 +61,27 @@
           <div class="history-stats"><span id="highest-day">Highest day: &mdash;</span><span id="average-day">Average: &mdash;</span></div>
         </section>
 
+        <section class="monitor-section compact-section analytics-section" aria-labelledby="project-title">
+          <div class="section-heading"><h2 id="project-title">Project usage</h2><span id="project-range-label">Last 7 days</span></div>
+          <div id="project-list" class="rank-list" aria-live="polite"><span class="empty-state">No project sessions found yet.</span></div>
+        </section>
+
+        <section class="monitor-section compact-section analytics-section" aria-labelledby="model-title">
+          <div class="section-heading"><h2 id="model-title">Model usage</h2><span>Local session metadata</span></div>
+          <div id="model-list" class="rank-list"><span class="empty-state">Model data will appear when Codex provides it.</span></div>
+        </section>
+
+        <section class="monitor-section compact-section analytics-section" aria-labelledby="heatmap-title">
+          <div class="section-heading"><h2 id="heatmap-title">Activity calendar</h2><span>Last 90 days</span></div>
+          <div id="heatmap" class="heatmap" role="group" aria-label="90-day token activity calendar"></div>
+          <div class="heatmap-legend"><span>Less</span><i class="heatmap-cell level-0"></i><i class="heatmap-cell level-1"></i><i class="heatmap-cell level-2"></i><i class="heatmap-cell level-3"></i><i class="heatmap-cell level-4"></i><span>More</span></div>
+        </section>
+
+        <section class="monitor-section compact-section analytics-section" aria-labelledby="sessions-title">
+          <div class="section-heading"><h2 id="sessions-title">Recent sessions</h2><span>Metadata only</span></div>
+          <div id="session-history" class="session-history" aria-live="polite"><span class="empty-state">No recent sessions found.</span></div>
+        </section>
+
         <section class="monitor-section compact-section" aria-labelledby="session-title">
           <div class="section-heading"><h2 id="session-title">Live session</h2><span id="session-status">Waiting for an active thread</span></div>
           <div class="session-grid"><div><strong id="session-total">&mdash;</strong><span>Total</span></div><div><strong id="session-input">&mdash;</strong><span>Input</span></div><div><strong id="session-output">&mdash;</strong><span>Output</span></div><div><strong id="session-reasoning">&mdash;</strong><span>Reasoning</span></div></div>
@@ -69,6 +90,7 @@
         <section class="monitor-section compact-section" aria-labelledby="forecast-title">
           <div class="section-heading"><h2 id="forecast-title">Usage forecast</h2><span class="estimate-badge">Estimate</span></div>
           <p id="forecast-text" class="forecast-text">Waiting for another sync. The forecast compares how quickly your usage rises with what remains, then estimates when the window could run out.</p>
+          <p id="forecast-detail" class="forecast-detail"></p>
           <p class="forecast-help">It needs at least two increasing usage samples, so it may stay unavailable when usage is flat. Treat the result as a rough guide.</p>
         </section>
 
@@ -89,12 +111,29 @@
           <label class="setting-row" for="refresh-select"><span><strong>Refresh interval</strong><small>How often Codex usage and token activity are checked</small></span><select id="refresh-select" name="refreshInterval" title="Choose how often usage is refreshed"><option value="15">15 seconds</option><option value="30">30 seconds</option><option value="60">60 seconds</option></select></label>
           <label class="setting-toggle" for="startup-toggle"><span><strong>Launch with Windows</strong><small>Start the monitor when you sign in</small></span><input id="startup-toggle" name="launchAtStartup" type="checkbox" /></label>
           <label class="setting-toggle" for="notifications-toggle"><span><strong>Usage notifications</strong><small>Alert for low limits, daily targets, and resets</small></span><input id="notifications-toggle" name="notificationsEnabled" type="checkbox" /></label>
+          <div class="settings-subsection"><strong>Alert thresholds</strong><small>Choose which remaining levels trigger notifications</small><div class="threshold-grid"><label><span>5-hour</span><div><input class="threshold-toggle" data-window="primary" data-threshold="50" type="checkbox" />50%</div><div><input class="threshold-toggle" data-window="primary" data-threshold="25" type="checkbox" />25%</div><div><input class="threshold-toggle" data-window="primary" data-threshold="10" type="checkbox" />10%</div></label><label><span>Weekly</span><div><input class="threshold-toggle" data-window="secondary" data-threshold="50" type="checkbox" />50%</div><div><input class="threshold-toggle" data-window="secondary" data-threshold="25" type="checkbox" />25%</div><div><input class="threshold-toggle" data-window="secondary" data-threshold="10" type="checkbox" />10%</div></label></div></div>
+          <label class="setting-toggle" for="quiet-hours-toggle"><span><strong>Quiet hours</strong><small>Suppress notifications during your chosen hours</small></span><input id="quiet-hours-toggle" name="quietHoursEnabled" type="checkbox" /></label>
+          <div class="time-row"><label>From <input id="quiet-hours-start" type="time" /></label><label>To <input id="quiet-hours-end" type="time" /></label></div>
+          <label class="setting-toggle" for="active-only-toggle"><span><strong>Only while Codex is active</strong><small>Notify only when a VS Code task is running</small></span><input id="active-only-toggle" name="notifyOnlyWhenActive" type="checkbox" /></label>
+          <button id="test-notification-button" class="secondary-button" type="button" title="Send a test notification">Send test notification</button>
+          <button id="snooze-button" class="secondary-button" type="button" title="Snooze usage notifications for one hour">Snooze notifications for 1 hour</button>
           <label class="setting-toggle" for="quiet-toggle"><span><strong>Quiet mode</strong><small>Start hidden; use the tray or Show to open it</small></span><input id="quiet-toggle" name="quietMode" type="checkbox" /></label>
           <label class="setting-toggle" for="pet-toggle"><span><strong>Codex Pet companion</strong><small>Show live activity above the minimized logo</small></span><input id="pet-toggle" name="petEnabled" type="checkbox" /></label>
+          <div class="setting-row shortcut-row"><span><strong>Show / hide shortcut</strong><small>Press a key combination to toggle Codex Pulse</small></span><div class="shortcut-control"><input id="shortcut-input" class="shortcut-input" type="text" readonly placeholder="Disabled" aria-describedby="shortcut-status" title="Press a key combination to set the global shortcut" /><button id="shortcut-clear" class="small-button" type="button" title="Disable the global shortcut">Clear</button></div></div>
+          <div id="shortcut-status" class="setting-hint" aria-live="polite">Global shortcut is active while Codex Pulse is running.</div>
           <label class="setting-row" for="daily-target-input"><span><strong>Daily token target</strong><small>Notify when today reaches this amount; 0 disables it</small></span><input id="daily-target-input" class="number-input" name="dailyTokenTarget" type="number" min="0" step="1000" placeholder="0" title="Set an optional daily token notification target" /></label>
+          <label class="setting-row" for="popup-size-select"><span><strong>Popup size</strong><small>Choose a smaller or larger dashboard</small></span><select id="popup-size-select"><option value="small">Small</option><option value="normal">Normal</option><option value="large">Large</option></select></label>
+          <label class="setting-row" for="opacity-select"><span><strong>Popup opacity</strong><small>Adjust how transparent the popup appears</small></span><select id="opacity-select"><option value="70">70%</option><option value="85">85%</option><option value="100">100%</option></select></label>
+          <label class="setting-toggle" for="always-on-top-toggle"><span><strong>Always on top</strong><small>Keep the popup above other windows</small></span><input id="always-on-top-toggle" type="checkbox" /></label>
+          <label class="setting-toggle" for="compact-mode-toggle"><span><strong>Compact dashboard</strong><small>Show only the key usage sections</small></span><input id="compact-mode-toggle" type="checkbox" /></label>
+          <label class="setting-toggle" for="start-minimized-toggle"><span><strong>Start minimized</strong><small>Open directly as the floating logo</small></span><input id="start-minimized-toggle" type="checkbox" /></label>
+          <label class="setting-toggle" for="pause-monitoring-toggle"><span><strong>Pause monitoring</strong><small>Stop Codex polling and session watching temporarily</small></span><input id="pause-monitoring-toggle" type="checkbox" /></label>
+          <label class="setting-toggle" for="per-monitor-toggle"><span><strong>Remember position per monitor</strong><small>Keep a separate popup position for each display</small></span><input id="per-monitor-toggle" type="checkbox" /></label>
+          <label class="setting-row" for="retention-select"><span><strong>History retention</strong><small>How long local history and analytics are kept</small></span><select id="retention-select"><option value="30">30 days</option><option value="90">90 days</option><option value="365">1 year</option></select></label>
           <div class="setting-row path-row"><span><strong>Codex executable</strong><small id="codex-path-label">Automatically detected</small></span><button id="choose-codex-button" class="small-button" type="button" title="Choose the Codex executable manually">Choose&hellip;</button></div>
           <button id="reset-position-button" class="secondary-button" type="button" title="Move the popup back to the primary display corner">Reset popup position</button>
-          <div class="export-settings"><strong>Export history</strong><small>Save locally collected token history for your records</small><div><button id="export-json-button" class="small-button" type="button" title="Save token history as a JSON file">JSON</button><button id="export-csv-button" class="small-button" type="button" title="Save token history as a CSV file">CSV</button></div></div>
+          <div class="export-settings"><strong>History &amp; backups</strong><small>Save, restore, or clear locally collected token history</small><div><button id="export-json-button" class="small-button" type="button" title="Save token history as a JSON file">Export JSON</button><button id="export-csv-button" class="small-button" type="button" title="Save token history as a CSV file">CSV</button><button id="import-button" class="small-button" type="button" title="Restore history from a JSON backup">Import</button></div><button id="clear-history-button" class="secondary-button" type="button" title="Delete locally collected Codex Pulse history">Clear local history</button></div>
+          <div class="diagnostics-settings"><strong>Connection diagnostics</strong><small>Check Codex, session files, and monitoring status. The report is copied to your clipboard.</small><button id="diagnostics-button" class="secondary-button" type="button">Run diagnostics</button><div id="diagnostics-result" class="diagnostics-result" aria-live="polite"></div></div>
           <div class="update-row" aria-live="polite"><span id="update-status">Checking for updates&hellip;</span><button id="update-button" class="small-button" type="button" title="Check for a newer version" hidden>Check</button></div>
         </div>
       </section>

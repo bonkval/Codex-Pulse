@@ -34,6 +34,7 @@ Codex Pulse runs as a normal Windows app. No PowerShell, terminal, Node.js, or V
 - Can be moved anywhere and remembers its position across restarts and monitors.
 - Minimizes to a compact floating logo and restores when clicked.
 - Includes a Windows tray menu for showing, hiding, refreshing, opening Codex, and quitting.
+- Supports a customizable global keyboard shortcut for showing or hiding the popup, with a default of `Ctrl+Shift+Alt+P`.
 - Can launch with Windows or start quietly in the tray.
 - Exports locally collected token history as JSON or CSV.
 - Checks GitHub Releases for updates.

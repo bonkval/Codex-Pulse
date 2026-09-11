@@ -30,7 +30,7 @@ let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let activeHistoryBar = null;
 let historyTooltipPinned = false;
 let suppressMiniClick = false;
-let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0 };
+let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P' };
 const notificationLevels = { primary: null, secondary: null };
 
 function effectiveTheme(theme) {
@@ -404,6 +404,35 @@ function updateSettingsPanel(next) {
   $('pet-toggle').checked = settings.petEnabled !== false;
   $('daily-target-input').value = settings.dailyTokenTarget || '';
   $('codex-path-label').textContent = settings.codexPath || 'Automatically detected';
+  $('shortcut-input').value = displayShortcut(settings.globalShortcut);
+  $('shortcut-status').textContent = next.globalShortcutError || (settings.globalShortcut ? 'Global shortcut is active while Codex Pulse is running.' : 'Global shortcut is disabled.');
+  $('shortcut-status').classList.toggle('is-error', Boolean(next.globalShortcutError));
+}
+
+function displayShortcut(accelerator) {
+  if (!accelerator) return '';
+  return accelerator.replaceAll('CommandOrControl', 'Ctrl').replaceAll('Command', 'Ctrl');
+}
+
+function shortcutFromEvent(event) {
+  const modifiers = [];
+  if (event.ctrlKey || event.metaKey) modifiers.push('CommandOrControl');
+  if (event.altKey) modifiers.push('Alt');
+  if (event.shiftKey) modifiers.push('Shift');
+  if (!modifiers.length || ['Control', 'Alt', 'Shift', 'Meta'].includes(event.key)) return null;
+
+  const codeKeys = {
+    Space: 'Space', Enter: 'Enter', Escape: 'Escape', Tab: 'Tab', Backspace: 'Backspace', Delete: 'Delete',
+    Insert: 'Insert', Home: 'Home', End: 'End', PageUp: 'PageUp', PageDown: 'PageDown',
+    ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+    Comma: ',', Period: '.', Slash: '/', Backslash: '\\', Semicolon: ';', Quote: "'",
+    Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backquote: '`',
+  };
+  let key = codeKeys[event.code];
+  if (!key && /^Key[A-Z]$/.test(event.code)) key = event.code.slice(3);
+  if (!key && /^Digit[0-9]$/.test(event.code)) key = event.code.slice(5);
+  if (!key && /^F([1-9]|1[0-2])$/.test(event.key)) key = event.key;
+  return key ? [...modifiers, key].join('+') : null;
 }
 
 async function saveSetting(patch) { updateSettingsPanel(await window.codexPulse.updateSettings(patch)); }
@@ -432,6 +461,17 @@ $('notifications-toggle').addEventListener('change', (event) => saveSetting({ no
 $('quiet-toggle').addEventListener('change', (event) => saveSetting({ quietMode: event.target.checked }));
 $('pet-toggle').addEventListener('change', (event) => saveSetting({ petEnabled: event.target.checked }));
 $('daily-target-input').addEventListener('change', (event) => saveSetting({ dailyTokenTarget: event.target.value }));
+$('shortcut-input').addEventListener('keydown', async (event) => {
+  event.preventDefault();
+  const shortcut = shortcutFromEvent(event);
+  if (!shortcut) {
+    $('shortcut-status').textContent = 'Use Ctrl, Alt, or Shift plus another key.';
+    $('shortcut-status').classList.add('is-error');
+    return;
+  }
+  await saveSetting({ globalShortcut: shortcut });
+});
+$('shortcut-clear').addEventListener('click', () => saveSetting({ globalShortcut: '' }));
 $('choose-codex-button').addEventListener('click', async () => { updateSettingsPanel(await window.codexPulse.chooseCodex()); refresh(); });
 $('reset-position-button').addEventListener('click', () => window.codexPulse.resetPosition());
 $('history-seven-button').addEventListener('click', () => { selectedHistoryRange = 7; $('history-seven-button').classList.add('active'); $('history-thirty-button').classList.remove('active'); if (currentUsage) renderHistory(currentUsage); });
