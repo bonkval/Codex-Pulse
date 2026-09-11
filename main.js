@@ -548,17 +548,25 @@ function setActivity(next) {
   setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
 }
 
+function petBoundsForAnchor(anchor, expanded = petExpanded) {
+  if (expanded) {
+    return {
+      x: Math.round(anchor.x - (PET_WIDTH - MINI_WIDTH) / 2),
+      y: Math.round(anchor.y - (PET_HEIGHT - MINI_HEIGHT)),
+      width: PET_WIDTH,
+      height: PET_HEIGHT,
+    };
+  }
+  return { x: Math.round(anchor.x), y: Math.round(anchor.y), width: MINI_WIDTH, height: MINI_HEIGHT };
+}
+
 function setPetExpanded(expanded) {
   if (!popup || popup.isDestroyed() || !isMinimized) return;
   const next = Boolean(expanded && settings.petEnabled);
   if (petExpanded === next) return;
   petExpanded = next;
   const anchor = miniAnchor || popup.getBounds();
-  if (petExpanded) {
-    popup.setBounds({ x: Math.round(anchor.x - (PET_WIDTH - MINI_WIDTH) / 2), y: Math.round(anchor.y - (PET_HEIGHT - MINI_HEIGHT)), width: PET_WIDTH, height: PET_HEIGHT }, false);
-  } else {
-    popup.setBounds({ x: anchor.x, y: anchor.y, width: MINI_WIDTH, height: MINI_HEIGHT }, false);
-  }
+  popup.setBounds(petBoundsForAnchor(anchor, next), false);
   if (!popup.webContents.isLoading()) popup.webContents.send('pet:expanded', petExpanded);
 }
 
@@ -992,12 +1000,22 @@ app.whenReady().then(() => {
   ipcMain.handle('app:quit', () => { isQuitting = true; app.quit(); });
   ipcMain.on('app:move', (_event, delta) => {
     if (!popup || popup.isDestroyed() || !delta) return;
-    if (isMinimized) expandedBounds = null;
-    const [x, y] = popup.getPosition();
-    popup.setPosition(Math.round(x + Number(delta.dx || 0)), Math.round(y + Number(delta.dy || 0)), false);
+    const dx = Number(delta.dx || 0);
+    const dy = Number(delta.dy || 0);
+    if (!Number.isFinite(dx) || !Number.isFinite(dy)) return;
+    const moveX = Math.round(dx);
+    const moveY = Math.round(dy);
+    if (!moveX && !moveY) return;
     if (isMinimized && miniAnchor) {
-      miniAnchor.x += Math.round(Number(delta.dx || 0));
-      miniAnchor.y += Math.round(Number(delta.dy || 0));
+      // Keep the logo anchor authoritative. Moving the native window first and
+      // updating the anchor afterward can race with the pet resize, which makes
+      // the activity bubble appear to stretch or drift during a drag.
+      expandedBounds = null;
+      miniAnchor = { x: miniAnchor.x + moveX, y: miniAnchor.y + moveY };
+      popup.setBounds(petBoundsForAnchor(miniAnchor), false);
+    } else {
+      const [x, y] = popup.getPosition();
+      popup.setPosition(Math.round(x + moveX), Math.round(y + moveY), false);
     }
     schedulePositionSave();
   });
