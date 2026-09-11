@@ -54,10 +54,10 @@
           </div>
         </section>
 
-        <section class="monitor-section" aria-labelledby="history-title">
+        <section class="monitor-section history-section" aria-labelledby="history-title">
           <div class="section-heading"><h2 id="history-title">Usage history</h2><div class="segmented" role="group" aria-label="Choose history range"><button id="history-seven-button" class="segment-button active" type="button" title="Show the last 7 days of token activity">7D</button><button id="history-thirty-button" class="segment-button" type="button" title="Show the last 30 days of token activity">30D</button></div></div>
-          <p id="history-axis-note" class="history-axis-note">Oldest → newest · weekday</p>
-          <div id="history-chart" class="history-chart" role="img" aria-label="Token usage history"></div>
+          <div id="history-chart" class="history-chart" role="group" aria-label="Token usage history"></div>
+          <div id="history-tooltip" class="history-tooltip" role="tooltip" hidden><strong id="history-tooltip-date"></strong><span id="history-tooltip-value"></span></div>
           <div class="history-stats"><span id="highest-day">Highest day: &mdash;</span><span id="average-day">Average: &mdash;</span></div>
         </section>
 

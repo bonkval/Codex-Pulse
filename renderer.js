@@ -7,6 +7,10 @@ const settingsPanel = $('settings-panel');
 const retryButton = $('retry-button');
 const minimizeButton = $('minimize-button');
 const miniView = $('mini-view');
+const historyChart = $('history-chart');
+const historyTooltip = $('history-tooltip');
+const historyTooltipDate = $('history-tooltip-date');
+const historyTooltipValue = $('history-tooltip-value');
 const card = document.querySelector('.card');
 const themeMeta = document.querySelector('meta[name="theme-color"]');
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -23,6 +27,8 @@ let previousResetTimes = { primary: null, secondary: null };
 let petTypingTimer = null;
 let petTypingTarget = '';
 let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
+let activeHistoryBar = null;
+let historyTooltipPinned = false;
 let suppressMiniClick = false;
 let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0 };
 const notificationLevels = { primary: null, secondary: null };
@@ -87,9 +93,30 @@ function dateLabel(date, range) {
   return range === 7 ? parsed.toLocaleDateString([], { weekday: 'short' }).slice(0, 2) : parsed.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function chartDateLabel(date, range) {
-  if (range === 7) return dateLabel(date, range);
-  return String(new Date(`${date}T12:00:00`).getDate());
+function fullDateLabel(date) {
+  return new Date(`${date}T12:00:00`).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function hideHistoryTooltip(force = false) {
+  if (!force && historyTooltipPinned) return;
+  activeHistoryBar = null;
+  historyTooltipPinned = false;
+  historyTooltip.hidden = true;
+}
+
+function showHistoryTooltip(bar, entry, pinned = false) {
+  const section = historyChart.closest('.history-section');
+  const sectionRect = section.getBoundingClientRect();
+  const barRect = bar.getBoundingClientRect();
+  const above = barRect.top - sectionRect.top > 58;
+  historyTooltipDate.textContent = fullDateLabel(entry.date);
+  historyTooltipValue.textContent = `${formatTokens(entry.tokens)} tokens`;
+  historyTooltip.classList.toggle('below', !above);
+  historyTooltip.style.left = `${barRect.left - sectionRect.left + barRect.width / 2}px`;
+  historyTooltip.style.top = `${(above ? barRect.top : barRect.bottom) - sectionRect.top + (above ? -8 : 8)}px`;
+  historyTooltipPinned = pinned;
+  activeHistoryBar = bar;
+  historyTooltip.hidden = false;
 }
 
 function getDailyHistory(data) {
@@ -118,25 +145,34 @@ function renderHistory(data) {
   }
   const max = Math.max(...entries.map((entry) => entry.tokens), 0);
   const peak = entries.reduce((best, entry) => !best || entry.tokens > best.tokens ? entry : best, null);
+  hideHistoryTooltip(true);
   chart.replaceChildren();
   chart.setAttribute('aria-label', `${selectedHistoryRange}-day token usage history; maximum ${formatTokens(max)} tokens`);
-  $('history-axis-note').textContent = selectedHistoryRange === 30 ? 'Oldest → newest · day of month' : 'Oldest → newest · weekday';
-  for (const [index, entry] of entries.entries()) {
+  for (const entry of entries) {
     const column = document.createElement('div');
     column.className = 'history-column';
     const bar = document.createElement('div');
     bar.className = 'history-bar';
     if (peak && peak.tokens > 0 && entry.date === peak.date) bar.classList.add('is-peak');
     bar.title = `${entry.date}: ${formatTokens(entry.tokens)} tokens`;
+    bar.setAttribute('role', 'button');
+    bar.tabIndex = 0;
+    bar.setAttribute('aria-label', `${fullDateLabel(entry.date)}: ${formatTokens(entry.tokens)} tokens`);
     const fill = document.createElement('div');
     fill.className = 'history-bar-fill';
     fill.style.setProperty('--bar-height', max && entry.tokens ? `${Math.max(5, entry.tokens / max * 100)}%` : '0%');
-    const label = document.createElement('span');
-    label.className = 'history-bar-label';
-    label.textContent = selectedHistoryRange === 7 || index % 5 === 0 || index === entries.length - 1 ? chartDateLabel(entry.date, selectedHistoryRange) : '';
     bar.append(fill);
-    column.append(bar, label);
+    column.append(bar);
     chart.append(column);
+    bar.addEventListener('pointerenter', () => showHistoryTooltip(bar, entry));
+    bar.addEventListener('pointerleave', () => hideHistoryTooltip());
+    bar.addEventListener('focus', () => showHistoryTooltip(bar, entry));
+    bar.addEventListener('blur', () => hideHistoryTooltip());
+    bar.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (activeHistoryBar === bar && historyTooltipPinned) hideHistoryTooltip(true);
+      else showHistoryTooltip(bar, entry, true);
+    });
   }
   const nonZero = history.filter((entry) => entry.tokens > 0);
   const highest = nonZero.reduce((best, entry) => !best || entry.tokens > best.tokens ? entry : best, null);
@@ -296,6 +332,7 @@ function renderUsage(data) {
   if (!data || !data.ok) {
     document.body.classList.add('error-state');
     document.querySelector('.status-dot').classList.add('error');
+    document.querySelector('.status-dot').classList.remove('live');
     $('connection-label').textContent = 'Codex unavailable';
     $('updated-label').textContent = lastSuccessfulSync ? 'Last synced ' + formatTime(lastSuccessfulSync) : 'Waiting for Codex';
     setRow('primary', null);
@@ -306,6 +343,7 @@ function renderUsage(data) {
   }
   document.body.classList.remove('loading', 'error-state');
   document.querySelector('.status-dot').classList.remove('error');
+  document.querySelector('.status-dot').classList.add('live');
   retryButton.hidden = true;
   currentUsage = data;
   lastSuccessfulSync = data.updatedAt;
@@ -382,6 +420,7 @@ $('update-button').addEventListener('click', async () => { const action = $('upd
 $('close-button').addEventListener('click', () => window.codexPulse.hide());
 $('codex-button').addEventListener('click', () => window.codexPulse.openCodex());
 miniView.addEventListener('click', () => { if (suppressMiniClick) { suppressMiniClick = false; return; } window.codexPulse.clearPet(); window.codexPulse.setView(false); });
+document.addEventListener('pointerdown', (event) => { if (!historyChart.contains(event.target)) hideHistoryTooltip(true); });
 window.codexPulse.onRefresh(refresh);
 window.codexPulse.onSettingsOpen(openSettings);
 window.codexPulse.onUpdate(renderUpdateState);

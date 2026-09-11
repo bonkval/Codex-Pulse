@@ -28,7 +28,8 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .eyebrow { font-size: 11px; font-weight: 800; letter-spacing: .16em; line-height: 1.1; }
 .subline { display: flex; align-items: center; gap: 6px; margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 600; }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.status-dot.error { background: #ff8d76; box-shadow: 0 0 0 3px rgba(255,141,118,.14); }
+.status-dot.live { background: #4f9b68; box-shadow: 0 0 0 3px rgba(79,155,104,.16); }
+.status-dot.error { background: #d45151; box-shadow: 0 0 0 3px rgba(212,81,81,.16); }
 .actions { gap: 4px; }
 .icon-button { width: 29px; height: 29px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; color: #777572; background: transparent; font: inherit; cursor: pointer; transition: background .18s, color .18s, transform .18s; }
 .icon-button:hover { color: var(--ink); background: rgba(37,37,37,.08); }
@@ -58,6 +59,7 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .row-meta span:last-child { color: #74716d; font-family: "Cascadia Mono", Consolas, monospace; font-size: 9px; font-variant-numeric: tabular-nums; }
 
 .monitor-section { display: grid; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
+.history-section { position: relative; }
 .compact-section { gap: 8px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .section-heading h2 { margin: 0; color: var(--ink); font-size: 12px; font-weight: 800; letter-spacing: -.01em; }
@@ -69,14 +71,17 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .segmented { display: flex; gap: 3px; padding: 2px; border-radius: 7px; background: var(--accent-soft); }
 .segment-button { min-width: 29px; padding: 3px 6px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font: 700 9px "Cascadia Mono", Consolas, monospace; cursor: pointer; }
 .segment-button.active { color: var(--surface); background: var(--accent); }
-.history-axis-note { margin: 6px 0 0; color: var(--faint); font-size: 8px; font-weight: 600; }
 .history-chart { height: 132px; display: flex; align-items: stretch; gap: 4px; padding: 8px 5px 0; border-bottom: 1px solid var(--line); }
-.history-column { min-width: 0; height: 100%; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr) 18px; gap: 4px; }
+.history-column { min-width: 0; height: 100%; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr); }
 .history-bar { min-width: 0; height: 100%; display: flex; align-items: end; justify-content: center; }
 .history-bar-fill { width: 100%; min-height: 2px; height: var(--bar-height, 0%); border-radius: 4px 4px 0 0; background: var(--accent); opacity: .78; }
 .history-bar:hover .history-bar-fill { opacity: 1; }
 .history-bar.is-peak .history-bar-fill { background: var(--ink); opacity: 1; }
-.history-bar-label { display: block; overflow: hidden; margin: 0; color: var(--faint); font-size: 8px; line-height: 18px; text-align: center; text-overflow: clip; white-space: nowrap; }
+.history-tooltip { position: absolute; z-index: 6; min-width: 92px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); box-shadow: 0 7px 18px rgba(37,37,37,.2); pointer-events: none; transform: translate(-50%, -100%); text-align: center; }
+.history-tooltip.below { transform: translate(-50%, 0); }
+.history-tooltip strong, .history-tooltip span { display: block; white-space: nowrap; }
+.history-tooltip strong { font-size: 9px; font-weight: 800; }
+.history-tooltip span { margin-top: 2px; color: var(--muted); font: 700 9px "Cascadia Mono", Consolas, monospace; }
 .history-stats { display: flex; justify-content: space-between; color: var(--faint); font-size: 9px; font-weight: 600; }
 .session-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .session-grid > div { display: grid; gap: 3px; }
