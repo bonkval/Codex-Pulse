@@ -3,6 +3,7 @@ const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
+const { CodexActivityBridge } = require('./activity-bridge');
 
 const WINDOW_WIDTH = 420;
 const WINDOW_HEIGHT = 620;
@@ -29,6 +30,7 @@ const DEFAULT_SETTINGS = {
 let popup;
 let tray;
 let pollTimer;
+let activityBridge;
 let positionSaveTimer;
 let isQuitting = false;
 let isMinimized = false;
@@ -145,6 +147,15 @@ function startPolling() {
   pollTimer = setInterval(() => {
     if (popup && !popup.isDestroyed()) popup.webContents.send('usage:refresh');
   }, settings.refreshInterval * 1000);
+}
+
+function startActivityBridge() {
+  activityBridge?.stop();
+  activityBridge = new CodexActivityBridge({
+    homeDir: app.getPath('home'),
+    onActivity: setActivity,
+  });
+  activityBridge.start();
 }
 
 function schedulePositionSave() {
@@ -305,29 +316,6 @@ function resolveCodexCommand() {
   return 'codex';
 }
 
-function activityTextForItem(item) {
-  const type = item?.type || '';
-  if (type === 'commandExecution') return 'Running a command...';
-  if (type === 'fileChange') return 'Updating your files...';
-  if (type === 'reasoning') return 'Thinking through it...';
-  if (type === 'plan') return 'Planning the next steps...';
-  if (type === 'agentMessage') return 'Writing a response...';
-  if (type.toLowerCase().includes('search')) return 'Searching for context...';
-  if (type === 'enteredReviewMode') return 'Reviewing your changes...';
-  return 'Working on your code...';
-}
-
-function isActiveThreadStatus(status) {
-  return status === 'active' || status?.type === 'active' || status?.state === 'active';
-}
-
-function activityTextForStatus(status) {
-  const flags = Array.isArray(status?.activeFlags) ? status.activeFlags : [];
-  if (flags.includes('waitingOnApproval')) return 'Waiting for your approval...';
-  if (flags.includes('waitingOnUserInput')) return 'Waiting for your input...';
-  return 'Working on your code...';
-}
-
 function setActivity(next) {
   const previous = currentActivity;
   currentActivity = { ...currentActivity, ...next, updatedAt: Date.now() };
@@ -402,18 +390,8 @@ class CodexUsageClient {
           if (!line.trim()) continue;
           try {
             const message = JSON.parse(line);
-            if (message.method === 'thread/status/changed') {
-              const status = message.params?.status;
-              const threadId = message.params?.threadId || null;
-              if (isActiveThreadStatus(status)) setActivity({ state: 'working', text: activityTextForStatus(status), threadId, source: 'status-event' });
-              else if (currentActivity.state === 'working' && (!threadId || currentActivity.threadId === threadId)) setActivity({ state: 'done', text: 'Codex finished the task.', threadId, source: 'status-event' });
-            }
-            if (message.method === 'turn/started') setActivity({ state: 'working', text: 'Starting a Codex turn...', threadId: message.params?.threadId || message.params?.turn?.id || null, source: 'turn-event' });
-            if (message.method === 'item/started') setActivity({ state: 'working', text: activityTextForItem(message.params?.item), threadId: message.params?.threadId || null });
-            if (message.method === 'turn/completed') setActivity({ state: 'done', text: message.params?.turn?.status === 'failed' ? 'Codex finished with an error.' : 'Codex finished the task.' });
             if (message.method === 'thread/tokenUsage/updated') {
               this.latestTokenUsage = message.params || null;
-              if (currentActivity.state === 'idle') setActivity({ state: 'working', text: 'Using Codex...', threadId: message.params?.threadId || null, source: 'token-event' });
             }
             if (message.id && this.pending.has(message.id)) {
               const request = this.pending.get(message.id);
@@ -486,30 +464,6 @@ class CodexUsageClient {
     });
   }
 
-  async readActivity() {
-    const listParams = {
-      limit: 25,
-      sortKey: 'updated_at',
-      sortDirection: 'desc',
-    };
-    let result = await this.request('thread/list', {
-      ...listParams,
-      sourceKinds: ['vscode', 'cli'],
-    }).catch(() => null);
-    if (!result) result = await this.request('thread/list', listParams).catch(() => null);
-    const threads = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : Array.isArray(result?.threads) ? result.threads : [];
-    const active = threads.find((thread) => isActiveThreadStatus(thread?.status) || thread?.active === true || thread?.isActive === true);
-    if (active) {
-      const text = activityTextForStatus(active.status);
-      if (currentActivity.state !== 'working' || currentActivity.source === 'thread-list' || currentActivity.threadId !== active.id) {
-        setActivity({ state: 'working', text, threadId: active.id, preview: active.preview || active.name || '', source: 'thread-list' });
-      }
-    } else if (currentActivity.state === 'working' && currentActivity.source === 'thread-list') {
-      setActivity({ state: 'done', text: 'Codex finished the task.', source: 'thread-list' });
-    }
-    return currentActivity;
-  }
-
   async readUsage() {
     try {
       await this.start();
@@ -520,7 +474,7 @@ class CodexUsageClient {
         this.request('account/usage/read').catch(() => null),
         this.request('account/read', { refreshToken: false }).catch(() => null),
       ]);
-      const activity = await this.readActivity();
+      const activity = currentActivity;
       mergeDailyHistory(tokenResult?.dailyUsageBuckets);
       addUsageSnapshot(snapshot.primary, snapshot.secondary);
       saveHistory();
@@ -773,12 +727,14 @@ app.whenReady().then(() => {
     schedulePositionSave();
   });
   startPolling();
+  startActivityBridge();
   setupAutoUpdater();
 });
 
 app.on('window-all-closed', (event) => event.preventDefault());
 app.on('before-quit', () => {
   clearInterval(pollTimer);
+  activityBridge?.stop();
   clearTimeout(positionSaveTimer);
   usageClient.stop();
 });

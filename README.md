@@ -31,7 +31,7 @@ Codex Pulse opens automatically as a small popup. No PowerShell or terminal comm
 - Can be moved anywhere on the screen.
 - Remembers the popup position across restarts and monitors.
 - Minimizes to a compact floating logo and restores when clicked.
-- Includes an optional Codex Pet companion that types live activity above the minimized logo and shows a completion badge when work finishes.
+- Includes an optional Codex Pet companion that reads local VS Code Codex session events, types live activity above the minimized logo, and shows a completion badge when work finishes.
 - Supports light, dark, and system themes.
 - Includes settings for refresh interval, startup behavior, notifications, quiet mode, and Codex executable selection.
 - Lets you set a daily token target and export locally stored history as JSON or CSV.
