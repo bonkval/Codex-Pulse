@@ -22,6 +22,7 @@ let lastTodayTokens = null;
 let previousResetTimes = { primary: null, secondary: null };
 let petTypingTimer = null;
 let petTypingTarget = '';
+let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let suppressMiniClick = false;
 let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0 };
 const notificationLevels = { primary: null, secondary: null };
@@ -200,7 +201,8 @@ function renderForecast(data) {
 }
 
 function renderPet(activity) {
-  const pet = activity || { state: 'idle', text: 'Waiting for Codex' };
+  if (activity && typeof activity === 'object') currentPetActivity = { ...currentPetActivity, ...activity };
+  const pet = currentPetActivity;
   const enabled = settings.petEnabled !== false;
   const visible = enabled && pet.state !== 'idle';
   const bubble = $('pet-bubble');

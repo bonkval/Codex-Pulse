@@ -469,13 +469,21 @@ class CodexUsageClient {
   }
 
   async readActivity() {
-    const result = await this.request('thread/list', {
+    const listParams = {
       limit: 25,
       sortKey: 'updated_at',
       sortDirection: 'desc',
+    };
+    let result = await this.request('thread/list', {
+      ...listParams,
       sourceKinds: ['vscode', 'cli'],
     }).catch(() => null);
-    const active = result?.data?.find((thread) => thread?.status?.type === 'active');
+    if (!result) result = await this.request('thread/list', listParams).catch(() => null);
+    const threads = Array.isArray(result) ? result : Array.isArray(result?.data) ? result.data : Array.isArray(result?.threads) ? result.threads : [];
+    const active = threads.find((thread) => {
+      const status = thread?.status;
+      return status === 'active' || status?.type === 'active' || status?.state === 'active' || thread?.active === true || thread?.isActive === true;
+    });
     if (active) {
       const flags = active.status.activeFlags || [];
       let text = 'Working on your code...';
@@ -568,7 +576,11 @@ function showPopup() {
   popup.show();
   popup.focus();
   popup.moveTop();
-  if (!popup.webContents.isLoading()) popup.webContents.send('usage:refresh');
+  if (!popup.webContents.isLoading()) {
+    popup.webContents.send('pet:activity', currentActivity);
+    popup.webContents.send('pet:expanded', petExpanded);
+    popup.webContents.send('usage:refresh');
+  }
 }
 
 function setPopupView(minimized) {
@@ -597,6 +609,7 @@ function setPopupView(minimized) {
   }
   schedulePositionSave();
   popup.webContents.send('window:view', minimized ? 'mini' : 'full');
+  popup.webContents.send('pet:activity', currentActivity);
   if (minimized) setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
   showPopup();
 }
