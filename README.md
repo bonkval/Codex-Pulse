@@ -1,26 +1,27 @@
 # Codex Pulse
 
-Codex Pulse is a small Windows desktop companion that sits above the bottom-right corner of the screen and shows the remaining Codex rate-limit capacity.
+Codex Pulse is a lightweight Windows companion app that shows how much Codex usage you have remaining in your current 5-hour and weekly limits while you work.
 
-It reads the authenticated account data from the local Codex CLI app-server, so it uses the same login as Codex and does not store or ask for API keys.
+## Install and run
 
-## Run locally
+1. Download the latest `Codex-Pulse-Setup.exe` installer from the repository's **Releases** page.
+2. Double-click the installer to install Codex Pulse.
+3. Leave **Create a desktop shortcut** checked if you want an icon on your desktop.
+4. Finish the installation, then open Codex Pulse from the desktop shortcut or the Start Menu.
 
-```powershell
-npm install
-npm start
-```
+Codex Pulse opens automatically as a small popup. No PowerShell or terminal commands are needed. Make sure you are signed in to Codex so the app can sync your usage.
 
-## Build the executable
+## Features
 
-```powershell
-npm run dist
-```
+- Shows remaining usage for the rolling 5-hour limit.
+- Shows remaining usage for the 7-day weekly limit.
+- Syncs usage from your local Codex login.
+- Refreshes usage automatically and includes a manual refresh button.
+- Stays available while you code in VS Code or other apps.
+- Can be moved anywhere on the screen.
+- Minimizes to a compact floating logo and restores when clicked.
+- Supports light mode and dark mode.
+- Includes a Windows tray icon for showing, hiding, refreshing, opening Codex, and quitting the app.
+- Can be configured to launch with Windows.
 
-The portable `.exe` is written to `dist/`. The app adds itself to Windows startup the first time it runs. The tray menu can be used to disable startup, refresh usage, show/hide the card, open Codex, or quit.
-
-The build also creates `Codex-Pulse-Setup-1.0.0.exe`. Share that installer with classmates; they can double-click it to install Codex Pulse with a desktop shortcut. After installation, launching Codex Pulse is a normal double-click experience and does not require PowerShell.
-
-Drag the card to reposition it. The minimize button turns it into a small floating logo; drag the logo anywhere and click it to restore the full card.
-
-If Codex is installed somewhere that is not on the Windows PATH, set `CODEX_BIN` to the absolute path of `codex.exe` before launching the app.
+Codex Pulse does not ask for or store API keys. It uses the existing local Codex session on your computer.

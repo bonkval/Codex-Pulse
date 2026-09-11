@@ -21,7 +21,7 @@ let expandedBounds = null;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function createTrayIcon() {
-  return nativeImage.createFromPath(path.join(__dirname, 'assets', 'tray.png'));
+  return nativeImage.createFromPath(path.join(__dirname, 'assets', 'icon.png')).resize({ width: 16, height: 16 });
 }
 
 function resolveCodexCommand() {
@@ -257,6 +257,7 @@ function createWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     show: false,
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#00000000',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),

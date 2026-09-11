@@ -17,6 +17,7 @@
   "build": {
     "appId": "com.codexpulse.desktop",
     "productName": "Codex Pulse",
+    "icon": "assets/icon.ico",
     "files": [
       "main.js",
       "preload.js",
