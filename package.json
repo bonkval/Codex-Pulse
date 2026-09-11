@@ -1,6 +1,6 @@
 {
   "name": "codex-pulse",
-  "version": "1.4.3",
+  "version": "1.5.1",
   "description": "A quiet desktop usage monitor for Codex.",
   "main": "main.js",
   "author": "Codex Pulse",
@@ -61,7 +61,7 @@
       {
         "provider": "github",
         "owner": "bonkval",
-        "repo": "ai-tray",
+        "repo": "Codex-Pulse",
         "releaseType": "release"
       }
     ]

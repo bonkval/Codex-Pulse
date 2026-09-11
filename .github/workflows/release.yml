@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run tests
+        run: npm test
+
       - name: Build installer and portable app
         run: npm run dist
         env:
@@ -37,6 +40,6 @@ jobs:
           generate_release_notes: true
           files: |
             dist/Codex-Pulse-Setup.exe
-            dist/Codex-Pulse-x64-tray.exe
+            dist/Codex-Pulse-*-x64-tray.exe
             dist/*.yml
             dist/*.blockmap

@@ -2,15 +2,15 @@
 
 Codex Pulse is a lightweight Windows companion for Codex. It stays near your tray and shows your remaining 5-hour and weekly usage, live token activity, and what Codex is currently doing in VS Code.
 
-**Current version: 1.4.3**
+**Current version: 1.5.1**
 
-> **[Download the latest Codex Pulse installer](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**
+> **[Download the latest Codex Pulse installer](https://github.com/bonkval/Codex-Pulse/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
-> If the direct download is unavailable, use the [latest GitHub release](https://github.com/bonkval/ai-tray/releases/latest).
+> If the direct download is unavailable, use the [latest GitHub release](https://github.com/bonkval/Codex-Pulse/releases/latest).
 
 ## Install and run
 
-1. Download the **[Codex Pulse installer](https://github.com/bonkval/ai-tray/releases/latest/download/Codex-Pulse-Setup.exe)**.
+1. Download the **[Codex Pulse installer](https://github.com/bonkval/Codex-Pulse/releases/latest/download/Codex-Pulse-Setup.exe)**.
 2. Double-click `Codex-Pulse-Setup.exe` and follow the installer steps.
 3. Leave **Create a desktop shortcut** checked if you want a shortcut on your desktop.
 4. Open Codex Pulse from the desktop shortcut or the Start Menu.
@@ -49,9 +49,9 @@ Codex Pulse does not ask for or store API keys. It uses the existing local Codex
 
 ## Latest release files
 
-For the v1.4.3 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
+For the v1.5.1 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
 
 - `Codex-Pulse-Setup.exe` — the only required download; use this to install Codex Pulse.
 - `Codex-Pulse-Setup.exe.blockmap` — optional; helps the automatic updater download updates efficiently.
 - `latest.yml` — optional for installation; lets the app find and install updates automatically.
-- `Codex-Pulse-1.4.3-x64-tray.exe` — optional portable version.
+- `Codex-Pulse-1.5.1-x64-tray.exe` — optional portable version.
