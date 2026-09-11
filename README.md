@@ -1,6 +1,6 @@
 # Codex Pulse
 
-Codex Pulse is a small Windows desktop companion that sits above the bottom-right corner of the screen and shows live Codex rate-limit usage.
+Codex Pulse is a small Windows desktop companion that sits above the bottom-right corner of the screen and shows the remaining Codex rate-limit capacity.
 
 It reads the authenticated account data from the local Codex CLI app-server, so it uses the same login as Codex and does not store or ask for API keys.
 

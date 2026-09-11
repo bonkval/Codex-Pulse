@@ -34,9 +34,9 @@ function formatWindow(window) {
 }
 
 function setRow(prefix, window) {
-  const percent = clamp(window?.usedPercent);
+  const percent = 100 - clamp(window?.usedPercent);
   $(`${prefix}-percent`).textContent = `${Math.round(percent)}%`;
-  $(`${prefix}-fill`).style.width = `${Math.max(percent, 2)}%`;
+  $(`${prefix}-fill`).style.width = `${percent === 0 ? 0 : Math.max(percent, 2)}%`;
   $(`${prefix}-detail`).textContent = formatWindow(window);
   $(`${prefix}-reset`).textContent = formatReset(window?.resetsAt);
 }

@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, screen, shell, ipcMain } = require('electron');
 const { spawn, execFileSync } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const WINDOW_WIDTH = 368;
@@ -32,6 +33,34 @@ function resolveCodexCommand() {
   } catch (_) {
     // The default command is still useful when the shell resolver is unavailable.
   }
+
+  const home = app.getPath('home');
+  const roots = [
+    path.join(home, '.vscode', 'extensions'),
+    process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'OpenAI', 'Codex', 'bin') : null,
+  ].filter(Boolean);
+  const candidates = [];
+  for (const root of roots) {
+    try {
+      const entries = fs.readdirSync(root, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const base = path.join(root, entry.name);
+        const direct = [
+          path.join(base, 'bin', 'windows-x86_64', 'codex.exe'),
+          path.join(base, 'codex.exe'),
+        ];
+        for (const candidate of direct) if (fs.existsSync(candidate)) candidates.push(candidate);
+        if (root.endsWith(path.join('OpenAI', 'Codex', 'bin'))) {
+          const nested = path.join(base, 'codex.exe');
+          if (fs.existsSync(nested)) candidates.push(nested);
+        }
+      }
+    } catch (_) {
+      // A missing extension folder should not prevent the app from starting.
+    }
+  }
+  if (candidates.length) return candidates[candidates.length - 1];
   return 'codex';
 }
 
