@@ -38,6 +38,11 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .close-button { font-size: 23px; font-weight: 300; line-height: 1; padding-bottom: 3px; }
 
 .dashboard-scroll { position: absolute; z-index: 1; top: 78px; right: 17px; bottom: 58px; left: 22px; overflow-y: auto; overscroll-behavior: contain; padding-right: 5px; }
+.dashboard-scroll, .settings-scroll { scrollbar-width: thin; scrollbar-color: rgba(78,80,80,.42) transparent; }
+.dashboard-scroll::-webkit-scrollbar, .settings-scroll::-webkit-scrollbar { width: 5px; }
+.dashboard-scroll::-webkit-scrollbar-track, .settings-scroll::-webkit-scrollbar-track { background: transparent; }
+.dashboard-scroll::-webkit-scrollbar-thumb, .settings-scroll::-webkit-scrollbar-thumb { min-height: 28px; border: 1px solid transparent; border-radius: 999px; background: rgba(78,80,80,.42); background-clip: content-box; }
+.dashboard-scroll::-webkit-scrollbar-thumb:hover, .settings-scroll::-webkit-scrollbar-thumb:hover { background: rgba(78,80,80,.68); background-clip: content-box; }
 .usage-stack { display: grid; gap: 16px; }
 .usage-row { display: grid; gap: 9px; }
 .row-heading { justify-content: space-between; }
@@ -143,6 +148,9 @@ body[data-theme="dark"] .logo-mark { background: #2a2b2d; box-shadow: 0 0 0 1px 
 body[data-theme="dark"] .logo-mark svg, body[data-theme="dark"] .mini-logo { color: #f4f1ec; }
 body[data-theme="dark"] .icon-button { color: #999691; }
 body[data-theme="dark"] .icon-button:hover { color: var(--ink); background: rgba(255,255,255,.085); }
+body[data-theme="dark"] .dashboard-scroll, body[data-theme="dark"] .settings-scroll { scrollbar-color: rgba(201,199,193,.42) transparent; }
+body[data-theme="dark"] .dashboard-scroll::-webkit-scrollbar-thumb, body[data-theme="dark"] .settings-scroll::-webkit-scrollbar-thumb { background: rgba(201,199,193,.42); background-clip: content-box; }
+body[data-theme="dark"] .dashboard-scroll::-webkit-scrollbar-thumb:hover, body[data-theme="dark"] .settings-scroll::-webkit-scrollbar-thumb:hover { background: rgba(201,199,193,.68); background-clip: content-box; }
 body[data-theme="dark"] .row-label { color: #d2cfca; }
 body[data-theme="dark"] .window-icon { color: #77746e; }
 body[data-theme="dark"] .fill, body[data-theme="dark"] .fill-secondary { background: #c9c7c1; }

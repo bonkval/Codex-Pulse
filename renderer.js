@@ -22,6 +22,7 @@ let lastTodayTokens = null;
 let previousResetTimes = { primary: null, secondary: null };
 let petTypingTimer = null;
 let petTypingTarget = '';
+let suppressMiniClick = false;
 let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0 };
 const notificationLevels = { primary: null, secondary: null };
 
@@ -365,7 +366,7 @@ $('export-csv-button').addEventListener('click', () => window.codexPulse.exportH
 $('update-button').addEventListener('click', async () => { const action = $('update-button').dataset.action; if (action === 'download') await window.codexPulse.downloadUpdate(); else if (action === 'install') await window.codexPulse.installUpdate(); else await window.codexPulse.checkForUpdates(); });
 $('close-button').addEventListener('click', () => window.codexPulse.hide());
 $('codex-button').addEventListener('click', () => window.codexPulse.openCodex());
-miniView.addEventListener('click', () => window.codexPulse.setView(false));
+miniView.addEventListener('click', () => { if (suppressMiniClick) { suppressMiniClick = false; return; } window.codexPulse.clearPet(); window.codexPulse.setView(false); });
 window.codexPulse.onRefresh(refresh);
 window.codexPulse.onSettingsOpen(openSettings);
 window.codexPulse.onUpdate(renderUpdateState);
@@ -377,14 +378,39 @@ card.addEventListener('pointerdown', (event) => {
   const interactive = event.target.closest('button, a, input, select');
   const scrollable = event.target.closest('.dashboard-scroll, .settings-scroll');
   const header = event.target.closest('.topbar, .settings-header');
-  if (event.button !== 0 || (interactive && !event.target.closest('#mini-view')) || (scrollable && !header)) return;
-  dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY };
+  if (event.button !== 0 || event.target.closest('#mini-view') || (interactive && !event.target.closest('#mini-view')) || (scrollable && !header)) return;
+  dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY, startX: event.screenX, startY: event.screenY };
   card.classList.add('is-dragging');
   card.setPointerCapture(event.pointerId);
 });
 card.addEventListener('pointermove', (event) => { if (!dragState || event.pointerId !== dragState.pointerId) return; const dx = event.screenX - dragState.x; const dy = event.screenY - dragState.y; dragState.x = event.screenX; dragState.y = event.screenY; window.codexPulse.moveBy(dx, dy); });
 card.addEventListener('pointerup', (event) => { if (!dragState || event.pointerId !== dragState.pointerId) return; dragState = null; card.classList.remove('is-dragging'); if (card.hasPointerCapture(event.pointerId)) card.releasePointerCapture(event.pointerId); });
 card.addEventListener('pointercancel', () => { dragState = null; card.classList.remove('is-dragging'); });
+
+miniView.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  suppressMiniClick = false;
+  dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY, startX: event.screenX, startY: event.screenY };
+  miniView.classList.add('is-dragging');
+  miniView.setPointerCapture(event.pointerId);
+});
+miniView.addEventListener('pointermove', (event) => {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  const dx = event.screenX - dragState.x;
+  const dy = event.screenY - dragState.y;
+  if (Math.abs(event.screenX - dragState.startX) > 4 || Math.abs(event.screenY - dragState.startY) > 4) suppressMiniClick = true;
+  dragState.x = event.screenX;
+  dragState.y = event.screenY;
+  window.codexPulse.moveBy(dx, dy);
+});
+miniView.addEventListener('pointerup', (event) => {
+  if (!dragState || event.pointerId !== dragState.pointerId) return;
+  dragState = null;
+  miniView.classList.remove('is-dragging');
+  if (miniView.hasPointerCapture(event.pointerId)) miniView.releasePointerCapture(event.pointerId);
+  if (suppressMiniClick) setTimeout(() => { suppressMiniClick = false; }, 100);
+});
+miniView.addEventListener('pointercancel', () => { dragState = null; miniView.classList.remove('is-dragging'); suppressMiniClick = false; });
 window.codexPulse.onViewChange((view) => { document.body.dataset.view = view; minimizeButton.setAttribute('aria-label', view === 'mini' ? 'Restore the full Codex Pulse window' : 'Minimize to floating logo'); minimizeButton.setAttribute('title', view === 'mini' ? 'Restore the full Codex Pulse window' : 'Minimize to a floating logo'); });
 
 (async () => { updateSettingsPanel(await window.codexPulse.getSettings()); renderUpdateState({ status: 'checking' }); await window.codexPulse.checkForUpdates(); await refresh(); })();
