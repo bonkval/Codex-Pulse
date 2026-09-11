@@ -6,6 +6,9 @@ const path = require('node:path');
 const WINDOW_WIDTH = 368;
 const WINDOW_HEIGHT = 286;
 const MINI_SIZE = 64;
+const LOGO_ANCHOR_X = 22;
+const LOGO_ANCHOR_Y = 22;
+const LOGO_MARK_SIZE = 39;
 const EDGE_GAP = 22;
 const POLL_INTERVAL = 60 * 1000;
 
@@ -14,6 +17,7 @@ let tray;
 let pollTimer;
 let isQuitting = false;
 let isMinimized = false;
+let expandedBounds = null;
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function createTrayIcon() {
@@ -217,19 +221,22 @@ function setPopupView(minimized) {
   const bounds = popup.getBounds();
   isMinimized = minimized;
   if (minimized) {
+    expandedBounds = bounds;
     popup.setBounds({
-      x: bounds.x + bounds.width - MINI_SIZE,
-      y: bounds.y + bounds.height - MINI_SIZE,
+      x: Math.round(bounds.x + LOGO_ANCHOR_X + (LOGO_MARK_SIZE - MINI_SIZE) / 2),
+      y: Math.round(bounds.y + LOGO_ANCHOR_Y + (LOGO_MARK_SIZE - MINI_SIZE) / 2),
       width: MINI_SIZE,
       height: MINI_SIZE,
     }, false);
   } else {
+    const restoreBounds = expandedBounds || bounds;
     popup.setBounds({
-      x: bounds.x,
-      y: bounds.y,
+      x: restoreBounds.x,
+      y: restoreBounds.y,
       width: WINDOW_WIDTH,
       height: WINDOW_HEIGHT,
     }, false);
+    expandedBounds = null;
   }
   popup.webContents.send('window:view', minimized ? 'mini' : 'full');
   showPopup();
@@ -316,6 +323,7 @@ app.whenReady().then(() => {
   ipcMain.handle('app:quit', () => { isQuitting = true; app.quit(); });
   ipcMain.on('app:move', (_event, delta) => {
     if (!popup || popup.isDestroyed() || !delta) return;
+    if (isMinimized) expandedBounds = null;
     const [x, y] = popup.getPosition();
     popup.setPosition(Math.round(x + Number(delta.dx || 0)), Math.round(y + Number(delta.dy || 0)), false);
   });
