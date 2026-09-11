@@ -1,0 +1,33 @@
+{
+  "name": "codex-pulse",
+  "version": "1.0.0",
+  "description": "A quiet desktop usage monitor for Codex.",
+  "main": "main.js",
+  "author": "Codex Pulse",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.codexpulse.desktop",
+    "productName": "Codex Pulse",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "styles.css",
+      "renderer.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "artifactName": "Codex-Pulse-${version}-${arch}.${ext}"
+    }
+  }
+}
