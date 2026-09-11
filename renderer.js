@@ -251,9 +251,11 @@ function renderPet(activity) {
   const visible = enabled && pet.state !== 'idle';
   const bubble = $('pet-bubble');
   const badge = $('pet-badge');
+  const kicker = $('pet-kicker');
   bubble.hidden = !visible;
   badge.hidden = !(visible && pet.state === 'done');
   document.body.dataset.petState = pet.state || 'idle';
+  kicker.textContent = pet.state === 'done' ? 'TASK COMPLETE' : 'CODEX ACTIVITY';
   if (visible && pet.text !== petTypingTarget) {
     clearTimeout(petTypingTimer);
     petTypingTarget = pet.text || 'Codex is working...';
