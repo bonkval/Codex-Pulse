@@ -568,9 +568,17 @@ function petBoundsForAnchor(anchor, expanded = petExpanded) {
   return { x: Math.round(anchor.x), y: Math.round(anchor.y), width: MINI_WIDTH, height: MINI_HEIGHT };
 }
 
-function safePetAnchor(anchor) {
-  if (isPositionFullyVisible(anchor.x, anchor.y) && isBoundsFullyVisible(petBoundsForAnchor(anchor, true))) return anchor;
-  return logoAnchorForBounds(getDefaultPopupBounds());
+function safePetAnchor(anchor, expanded = true) {
+  if (!isPositionFullyVisible(anchor.x, anchor.y)) return logoAnchorForBounds(getDefaultPopupBounds());
+  if (!expanded || isBoundsFullyVisible(petBoundsForAnchor(anchor, true))) return anchor;
+
+  const display = screen.getDisplayMatching({ x: anchor.x, y: anchor.y, width: MINI_WIDTH, height: MINI_HEIGHT });
+  const { workArea } = display;
+  const adjusted = {
+    x: Math.round(Math.max(workArea.x + (PET_WIDTH - MINI_WIDTH) / 2, Math.min(anchor.x, workArea.x + workArea.width - (PET_WIDTH + MINI_WIDTH) / 2))),
+    y: Math.round(Math.max(workArea.y + (PET_HEIGHT - MINI_HEIGHT), Math.min(anchor.y, workArea.y + workArea.height - MINI_HEIGHT))),
+  };
+  return isBoundsFullyVisible(petBoundsForAnchor(adjusted, true)) ? adjusted : logoAnchorForBounds(getDefaultPopupBounds());
 }
 
 function setPetExpanded(expanded) {
@@ -580,7 +588,7 @@ function setPetExpanded(expanded) {
   petExpanded = next;
   let anchor = miniAnchor || popup.getBounds();
   if (next) {
-    const safeAnchor = safePetAnchor(anchor);
+    const safeAnchor = safePetAnchor(anchor, next);
     if (safeAnchor.x !== anchor.x || safeAnchor.y !== anchor.y) {
       anchor = safeAnchor;
       miniAnchor = safeAnchor;
@@ -1035,7 +1043,7 @@ app.whenReady().then(() => {
       // updating the anchor afterward can race with the pet resize, which makes
       // the activity bubble appear to stretch or drift during a drag.
       expandedBounds = null;
-      miniAnchor = { x: miniAnchor.x + moveX, y: miniAnchor.y + moveY };
+      miniAnchor = safePetAnchor({ x: miniAnchor.x + moveX, y: miniAnchor.y + moveY }, petExpanded);
       popup.setBounds(petBoundsForAnchor(miniAnchor), false);
     } else {
       const [x, y] = popup.getPosition();
