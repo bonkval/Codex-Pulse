@@ -7,6 +7,14 @@ Codex Pulse is a lightweight Windows companion for Codex. It stays near your tra
 > **[Download the latest Codex Pulse installer](https://github.com/bonkval/Codex-Pulse/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
 > If the direct download is unavailable, use the [latest GitHub release](https://github.com/bonkval/Codex-Pulse/releases/latest).
+## Screenshots
+<img width="476" height="697" alt="image" src="https://github.com/user-attachments/assets/3562a7d0-7990-414a-baad-31ee499b3d03" />
+<img width="479" height="701" alt="image" src="https://github.com/user-attachments/assets/7f905b40-a56f-4673-ac39-81c65eb18229" />
+<img width="481" height="705" alt="image" src="https://github.com/user-attachments/assets/a4b83c5a-9497-4356-a2aa-edcda305417c" />
+<img width="475" height="703" alt="image" src="https://github.com/user-attachments/assets/42edea74-47d1-4a4b-871e-aabbd5d3783b" />
+<img width="475" height="695" alt="image" src="https://github.com/user-attachments/assets/eb4dcfce-2ed9-4db7-858d-5e64b780dfff" />
+<img width="478" height="696" alt="image" src="https://github.com/user-attachments/assets/d39d4a5e-a415-42cf-a4ed-9cb225332aa8" />
+<img width="484" height="698" alt="image" src="https://github.com/user-attachments/assets/40c21fbc-fe00-45a8-a899-707303207cf1" />
 
 ## Install and run
 
