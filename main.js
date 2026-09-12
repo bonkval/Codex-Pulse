@@ -13,6 +13,8 @@ const MINI_WIDTH = 48;
 const MINI_HEIGHT = 48;
 const PET_WIDTH = 240;
 const PET_HEIGHT = 118;
+const TASKBAR_WIDTH = 250;
+const TASKBAR_HEIGHT = 42;
 const LOGO_ANCHOR_X = 22;
 const LOGO_ANCHOR_Y = 22;
 const LOGO_MARK_SIZE = 39;
@@ -47,6 +49,8 @@ let tray;
 let trayMenu;
 let trayStatusItem;
 let trayTaskbarItem;
+let taskbarWindow;
+let taskbarStatusTimer;
 let pollTimer;
 let activityBridge;
 let positionSaveTimer;
@@ -62,6 +66,7 @@ let miniAnchor = null;
 let miniDragging = false;
 let currentActivity = { state: 'idle', text: 'Waiting for Codex' };
 let latestLiveUsage = null;
+let latestTaskbarStatus = null;
 let latestUpdateState = { status: 'checking' };
 let registeredGlobalShortcut = null;
 let globalShortcutError = null;
@@ -265,7 +270,12 @@ function commitSettings(patch) {
   if (previous.popupOpacity !== next.popupOpacity) popup?.setOpacity(next.popupOpacity / 100);
   if (previous.taskbarMode !== next.taskbarMode) {
     if (trayTaskbarItem) trayTaskbarItem.checked = next.taskbarMode;
-    if (next.taskbarMode && popup && !popup.isDestroyed()) popup.hide();
+    if (next.taskbarMode) {
+      if (popup && !popup.isDestroyed()) popup.hide();
+      showTaskbarStatus();
+    } else {
+      hideTaskbarStatus();
+    }
   }
   if (previous.popupSize !== next.popupSize && popup && !popup.isDestroyed() && !isMinimized) {
     const size = getWindowSize();
@@ -371,6 +381,8 @@ function updateTrayTooltip(data) {
   const active = data?.activity?.state === 'working' ? ` - ${data.activity.text || 'Codex working'}` : '';
   tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}${active}`);
   if (trayStatusItem) trayStatusItem.label = `5-hour ${primary} · Weekly ${secondary} · Today ${today}`;
+  latestTaskbarStatus = { primary, secondary, today, activity: data?.activity || null, theme: settings.theme };
+  if (taskbarWindow && !taskbarWindow.isDestroyed() && !taskbarWindow.webContents.isLoading()) taskbarWindow.webContents.send('taskbar:status', latestTaskbarStatus);
 }
 
 function showUsageNotification(data) {
@@ -918,6 +930,80 @@ function createWindow() {
   });
 }
 
+function getTaskbarStatusBounds() {
+  const display = screen.getPrimaryDisplay();
+  const { x, y, width, height } = display.bounds;
+  const workArea = display.workArea;
+  const topGap = workArea.y - y;
+  const bottomGap = y + height - (workArea.y + workArea.height);
+  const taskbarAtTop = topGap > bottomGap;
+  const reservedTaskbarHeight = Math.max(TASKBAR_HEIGHT, bottomGap);
+  const statusX = Math.max(workArea.x + 12, workArea.x + workArea.width - TASKBAR_WIDTH - 215);
+  const statusY = taskbarAtTop
+    ? y + 3
+    : y + height - reservedTaskbarHeight + 3;
+  return { x: statusX, y: statusY, width: TASKBAR_WIDTH, height: TASKBAR_HEIGHT };
+}
+
+function positionTaskbarStatus() {
+  if (!taskbarWindow || taskbarWindow.isDestroyed()) return;
+  taskbarWindow.setBounds(getTaskbarStatusBounds(), false);
+}
+
+function showTaskbarStatus() {
+  if (!taskbarWindow || taskbarWindow.isDestroyed() || !settings.taskbarMode) return;
+  positionTaskbarStatus();
+  taskbarWindow.setAlwaysOnTop(true, 'screen-saver');
+  taskbarWindow.showInactive();
+  if (latestTaskbarStatus && !taskbarWindow.webContents.isLoading()) taskbarWindow.webContents.send('taskbar:status', latestTaskbarStatus);
+  clearInterval(taskbarStatusTimer);
+  taskbarStatusTimer = setInterval(() => {
+    if (!settings.taskbarMode || !taskbarWindow || taskbarWindow.isDestroyed()) {
+      clearInterval(taskbarStatusTimer);
+      taskbarStatusTimer = null;
+      return;
+    }
+    positionTaskbarStatus();
+    taskbarWindow.setAlwaysOnTop(true, 'screen-saver');
+    if (!taskbarWindow.isVisible()) taskbarWindow.showInactive();
+    else taskbarWindow.moveTop();
+  }, 250);
+}
+
+function hideTaskbarStatus() {
+  clearInterval(taskbarStatusTimer);
+  taskbarStatusTimer = null;
+  if (taskbarWindow && !taskbarWindow.isDestroyed()) taskbarWindow.hide();
+}
+
+function createTaskbarStatus() {
+  taskbarWindow = new BrowserWindow({
+    ...getTaskbarStatusBounds(),
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    focusable: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    show: false,
+    hasShadow: false,
+    backgroundColor: '#00000000',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  taskbarWindow.setAlwaysOnTop(true, 'screen-saver');
+  taskbarWindow.loadFile(path.join(__dirname, 'taskbar.html'));
+  taskbarWindow.webContents.once('did-finish-load', () => {
+    if (latestTaskbarStatus) taskbarWindow.webContents.send('taskbar:status', latestTaskbarStatus);
+    showTaskbarStatus();
+  });
+  screen.on('display-metrics-changed', positionTaskbarStatus);
+}
+
 function createTray() {
   tray = new Tray(createTrayIcon());
   tray.setToolTip('Codex Pulse');
@@ -963,6 +1049,7 @@ app.whenReady().then(() => {
   app.setAppUserModelId('com.codexpulse.desktop');
   createWindow();
   createTray();
+  createTaskbarStatus();
   ipcMain.handle('usage:read', () => usageClient.readUsage());
   ipcMain.handle('app:hide', () => popup.hide());
   ipcMain.handle('app:show', () => showPopup());

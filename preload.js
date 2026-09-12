@@ -31,4 +31,5 @@ contextBridge.exposeInMainWorld('codexPulse', {
   onViewChange: (callback) => ipcRenderer.on('window:view', (_event, view) => callback(view)),
   onPetActivity: (callback) => ipcRenderer.on('pet:activity', (_event, activity) => callback(activity)),
   onPetExpanded: (callback) => ipcRenderer.on('pet:expanded', (_event, expanded) => callback(Boolean(expanded))),
+  onTaskbarStatus: (callback) => ipcRenderer.on('taskbar:status', (_event, status) => callback(status)),
 });

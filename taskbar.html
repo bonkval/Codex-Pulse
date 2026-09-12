@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex Pulse status</title>
+    <link rel="stylesheet" href="taskbar.css" />
+  </head>
+  <body>
+    <button id="taskbar-status" class="taskbar-status" type="button" title="Open Codex Pulse">
+      <img class="taskbar-icon" src="assets/icon.png" alt="" />
+      <span class="status-group"><span class="status-label">5H</span><strong id="primary-value">-</strong></span>
+      <span class="status-group"><span class="status-label">WEEK</span><strong id="secondary-value">-</strong></span>
+      <span class="status-group today-group"><span class="status-label">TODAY</span><strong id="today-value">-</strong></span>
+      <span id="activity-value" class="activity-value" aria-live="polite">Idle</span>
+    </button>
+    <script src="taskbar.js"></script>
+  </body>
+</html>
