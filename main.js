@@ -1188,7 +1188,10 @@ app.whenReady().then(() => {
   });
   handleTrusted('notifications:show', (_event, data) => showUsageNotification(data));
   handleTrusted('diagnostics:run', () => runDiagnostics());
-  handleTrusted('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });
+  handleTrusted('pet:set-expanded', (_event, expanded) => {
+    if (!miniDragging) setPetExpanded(Boolean(expanded));
+    return petExpanded;
+  });
   handleTrusted('pet:clear', () => { clearPetNotification(); return true; });
   handleTrusted('app:check-updates', () => checkForUpdates());
   handleTrusted('app:download-update', async () => {

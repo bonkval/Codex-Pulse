@@ -142,6 +142,12 @@ body[data-view="mini"][data-pet-expanded="true"] .mini-shell { position: absolut
 body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-bubble { border-color: rgba(79,155,104,.54); }
 body[data-view="mini"][data-pet-expanded="true"][data-pet-state="done"] .pet-kicker { color: #3f7e53; }
 body[data-view="mini"][data-pet-expanded="true"][data-pet-state="working"] .pet-message::after { content: '\u2588'; display: inline-block; margin-left: 2px; animation: blink 1s steps(2, jump-none) infinite; }
+body[data-view="mini"][data-pet-dragging="true"] .card { overflow: visible; background: transparent; border: 0; clip-path: none; box-shadow: none; }
+body[data-view="mini"][data-pet-dragging="true"] .card::after { display: none; }
+body[data-view="mini"][data-pet-dragging="true"] .mini-view { display: grid; overflow: visible; }
+body[data-view="mini"][data-pet-dragging="true"] .mini-shell { position: absolute; left: 50%; top: 50%; bottom: auto; width: 48px; height: 48px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 6px 16px rgba(37,37,37,.16); transform: translate(-50%, -50%); }
+body[data-view="mini"][data-pet-dragging="true"] .pet-bubble,
+body[data-view="mini"][data-pet-dragging="true"] .pet-badge { display: none !important; }
 @keyframes blink { 50% { opacity: 0; } }
 .icon-button:focus-visible, .text-button:focus-visible, .mini-view:focus-visible, .back-button:focus-visible, .small-button:focus-visible, .secondary-button:focus-visible, .segment-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .usage-row[data-level="warning"] .fill { background: #a7783e; }

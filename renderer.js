@@ -30,6 +30,8 @@ let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let activeHistoryBar = null;
 let historyTooltipPinned = false;
 let suppressMiniClick = false;
+let miniDragging = false;
+let miniDragGeneration = 0;
 let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, taskbarMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
 const notificationLevels = { primary: null, secondary: null };
 
@@ -344,7 +346,35 @@ function renderPet(activity) {
   // authoritative pet:expanded event. Do not apply the asynchronous return
   // value here: a stale response can arrive after dragging has collapsed the
   // native window and make the bubble render inside 48x48 bounds.
-  void window.codexPulse.setPetExpanded(visible).catch(() => {});
+  if (!miniDragging) void window.codexPulse.setPetExpanded(visible).catch(() => {});
+}
+
+function hidePetWhileDragging() {
+  miniDragGeneration += 1;
+  miniDragging = true;
+  document.body.dataset.petDragging = 'true';
+  document.body.dataset.petExpanded = 'false';
+  $('pet-bubble').hidden = true;
+  $('pet-badge').hidden = true;
+}
+
+function restorePetAfterDragging() {
+  miniDragging = false;
+  document.body.dataset.petDragging = 'false';
+  const visible = settings.petEnabled !== false && currentPetActivity.state !== 'idle';
+  document.body.dataset.petExpanded = visible ? 'true' : 'false';
+  $('pet-bubble').hidden = !visible;
+  $('pet-badge').hidden = !(visible && currentPetActivity.state === 'done');
+}
+
+function finishMiniDragging() {
+  const generation = ++miniDragGeneration;
+  const restore = window.codexPulse.setMiniDragging(false);
+  void restore.then(() => {
+    if (!miniDragging && generation === miniDragGeneration) restorePetAfterDragging();
+  }).catch(() => {
+    if (!miniDragging && generation === miniDragGeneration) restorePetAfterDragging();
+  });
 }
 
 function renderAccount(data) {
@@ -601,7 +631,18 @@ window.codexPulse.onLiveUsage(renderLiveUsage);
 window.codexPulse.onSettingsOpen(openSettings);
 window.codexPulse.onUpdate(renderUpdateState);
 window.codexPulse.onPetActivity(renderPet);
-window.codexPulse.onPetExpanded((expanded) => { document.body.dataset.petExpanded = expanded ? 'true' : 'false'; });
+window.codexPulse.onPetExpanded((expanded) => {
+  if (miniDragging) return;
+  document.body.dataset.petExpanded = expanded ? 'true' : 'false';
+  if (expanded) {
+    const visible = settings.petEnabled !== false && currentPetActivity.state !== 'idle';
+    $('pet-bubble').hidden = !visible;
+    $('pet-badge').hidden = !(visible && currentPetActivity.state === 'done');
+  } else {
+    $('pet-bubble').hidden = true;
+    $('pet-badge').hidden = true;
+  }
+});
 systemTheme.addEventListener?.('change', () => { if (settings.theme === 'system') applyTheme('system'); });
 
 card.addEventListener('pointerdown', (event) => {
@@ -620,7 +661,8 @@ card.addEventListener('pointercancel', () => { dragState = null; card.classList.
 miniView.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
   suppressMiniClick = false;
-  window.codexPulse.setMiniDragging(true);
+  hidePetWhileDragging();
+  void window.codexPulse.setMiniDragging(true).catch(() => {});
   dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY, startX: event.screenX, startY: event.screenY };
   miniView.classList.add('is-dragging');
   miniView.setPointerCapture(event.pointerId);
@@ -637,17 +679,22 @@ miniView.addEventListener('pointermove', (event) => {
 miniView.addEventListener('pointerup', (event) => {
   if (!dragState || event.pointerId !== dragState.pointerId) return;
   dragState = null;
-  window.codexPulse.setMiniDragging(false);
   miniView.classList.remove('is-dragging');
   if (miniView.hasPointerCapture(event.pointerId)) miniView.releasePointerCapture(event.pointerId);
+  finishMiniDragging();
   if (suppressMiniClick) setTimeout(() => { suppressMiniClick = false; }, 100);
 });
-miniView.addEventListener('pointercancel', () => { window.codexPulse.setMiniDragging(false); });
+miniView.addEventListener('pointercancel', () => {
+  if (!miniDragging) return;
+  dragState = null;
+  miniView.classList.remove('is-dragging');
+  finishMiniDragging();
+});
 window.addEventListener('blur', () => {
   if (!dragState) return;
   dragState = null;
   miniView.classList.remove('is-dragging');
-  window.codexPulse.setMiniDragging(false);
+  finishMiniDragging();
 });
 window.codexPulse.onViewChange((view) => { document.body.dataset.view = view; minimizeButton.setAttribute('aria-label', view === 'mini' ? 'Restore the full Codex Pulse window' : 'Minimize to floating logo'); minimizeButton.setAttribute('title', view === 'mini' ? 'Restore the full Codex Pulse window' : 'Minimize to a floating logo'); });
 
