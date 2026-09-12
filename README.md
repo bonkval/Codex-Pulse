@@ -57,7 +57,7 @@ Codex Pulse does not ask for or store API keys. It uses the existing local Codex
 
 ## Latest release files
 
-For the v1.5.3 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
+For the v1.5.5 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
 
 - `Codex-Pulse-Setup.exe` — the only required download; use this to install Codex Pulse.
 - `Codex-Pulse-Setup.exe.blockmap` — optional; helps the automatic updater download updates efficiently.
