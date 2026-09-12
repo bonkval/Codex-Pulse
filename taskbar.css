@@ -18,7 +18,7 @@ body { padding: 3px; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; }
 }
 .taskbar-status:hover { border-color: rgba(255, 255, 255, .3); background: #292a2c; }
 .taskbar-status:focus-visible { outline: 2px solid var(--taskbar-accent); outline-offset: 1px; }
-.taskbar-icon { width: 21px; height: 21px; display: block; flex: 0 0 auto; object-fit: contain; object-position: center; transform: translateY(-2px); }
+.taskbar-icon { width: 21px; height: 21px; display: block; flex: 0 0 auto; transform: translateY(-1px); }
 .status-group { display: grid; min-width: 38px; gap: 1px; }
 .status-label { color: var(--taskbar-muted); font-size: 7px; font-weight: 800; letter-spacing: .05em; line-height: 1; }
 .status-group strong { color: var(--taskbar-ink); font: 800 11px/1 "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
