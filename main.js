@@ -15,6 +15,7 @@ const PET_WIDTH = 240;
 const PET_HEIGHT = 118;
 const TASKBAR_WIDTH = 250;
 const TASKBAR_HEIGHT = 42;
+const TASKBAR_SYSTEM_TRAY_RESERVE = 380;
 const LOGO_ANCHOR_X = 22;
 const LOGO_ANCHOR_Y = 22;
 const LOGO_MARK_SIZE = 39;
@@ -985,7 +986,9 @@ function getTaskbarStatusBounds() {
   const bottomGap = y + height - (workArea.y + workArea.height);
   const taskbarAtTop = topGap > bottomGap;
   const reservedTaskbarHeight = Math.max(TASKBAR_HEIGHT, bottomGap);
-  const statusX = Math.max(workArea.x + 12, workArea.x + workArea.width - TASKBAR_WIDTH - 215);
+  // Leave room for Windows' language, network, audio, battery, clock, and
+  // notification controls so the chip never covers the system tray area.
+  const statusX = Math.max(workArea.x + 12, workArea.x + workArea.width - TASKBAR_WIDTH - TASKBAR_SYSTEM_TRAY_RESERVE);
   const statusY = taskbarAtTop
     ? y + 3
     : y + height - reservedTaskbarHeight + 3;
