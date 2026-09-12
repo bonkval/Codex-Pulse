@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, nativeImage, screen, shell, ipcMain, dialog, Notification, globalShortcut, clipboard } = require('electron');
+const { app, BrowserWindow, Menu, Tray, nativeImage, nativeTheme, screen, shell, ipcMain, dialog, Notification, globalShortcut, clipboard } = require('electron');
 const { spawn, execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -268,6 +268,7 @@ function commitSettings(patch) {
   if (previous.petEnabled !== next.petEnabled && !miniDragging) setPetExpanded(next.petEnabled && currentActivity.state !== 'idle');
   if (previous.alwaysOnTop !== next.alwaysOnTop) popup?.setAlwaysOnTop(next.alwaysOnTop, 'screen-saver');
   if (previous.popupOpacity !== next.popupOpacity) popup?.setOpacity(next.popupOpacity / 100);
+  if (previous.theme !== next.theme) updateTaskbarTheme();
   if (previous.taskbarMode !== next.taskbarMode) {
     if (trayTaskbarItem) trayTaskbarItem.checked = next.taskbarMode;
     if (next.taskbarMode) {
@@ -373,6 +374,16 @@ function legacyTrayTooltip(data) {
   tray.setToolTip(`Codex Pulse · 5-hour ${primary} remaining · weekly ${secondary} remaining`);
 }
 
+function effectiveTaskbarTheme() {
+  return settings.theme === 'system' ? (nativeTheme.shouldUseDarkColors ? 'dark' : 'light') : settings.theme;
+}
+
+function updateTaskbarTheme() {
+  if (!latestTaskbarStatus) return;
+  latestTaskbarStatus = { ...latestTaskbarStatus, theme: effectiveTaskbarTheme() };
+  if (taskbarWindow && !taskbarWindow.isDestroyed() && !taskbarWindow.webContents.isLoading()) taskbarWindow.webContents.send('taskbar:status', latestTaskbarStatus);
+}
+
 function updateTrayTooltip(data) {
   if (!tray || tray.isDestroyed()) return;
   const primary = Number.isFinite(Number(data?.primary)) ? `${Math.round(Number(data.primary))}%` : '-';
@@ -381,7 +392,7 @@ function updateTrayTooltip(data) {
   const active = data?.activity?.state === 'working' ? ` - ${data.activity.text || 'Codex working'}` : '';
   tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}${active}`);
   if (trayStatusItem) trayStatusItem.label = `5-hour ${primary} · Weekly ${secondary} · Today ${today}`;
-  latestTaskbarStatus = { primary, secondary, today, activity: data?.activity || null, theme: settings.theme };
+  latestTaskbarStatus = { primary, secondary, today, activity: data?.activity || null, theme: effectiveTaskbarTheme() };
   if (taskbarWindow && !taskbarWindow.isDestroyed() && !taskbarWindow.webContents.isLoading()) taskbarWindow.webContents.send('taskbar:status', latestTaskbarStatus);
 }
 
@@ -977,6 +988,7 @@ function hideTaskbarStatus() {
 }
 
 function createTaskbarStatus() {
+  if (!latestTaskbarStatus) latestTaskbarStatus = { primary: '-', secondary: '-', today: '-', activity: null, theme: effectiveTaskbarTheme() };
   taskbarWindow = new BrowserWindow({
     ...getTaskbarStatusBounds(),
     frame: false,
@@ -1044,6 +1056,9 @@ if (!hasSingleInstanceLock) {
 app.whenReady().then(() => {
   loadSettings();
   loadHistory();
+  nativeTheme.on('updated', () => {
+    if (settings.theme === 'system') updateTaskbarTheme();
+  });
   registerGlobalShortcut(settings.globalShortcut);
   applyStartupSetting();
   app.setAppUserModelId('com.codexpulse.desktop');

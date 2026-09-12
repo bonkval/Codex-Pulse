@@ -6,6 +6,7 @@ function valueOrDash(value) {
 
 function renderStatus(status) {
   if (!status) return;
+  document.body.dataset.theme = status.theme === 'light' ? 'light' : 'dark';
   $('primary-value').textContent = valueOrDash(status.primary);
   $('secondary-value').textContent = valueOrDash(status.secondary);
   $('today-value').textContent = valueOrDash(status.today).replace(' tokens', '');

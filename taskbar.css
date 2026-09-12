@@ -1,4 +1,13 @@
 :root {
+  color-scheme: light;
+  --taskbar-surface: rgba(248, 247, 244, .96);
+  --taskbar-line: rgba(37, 37, 37, .16);
+  --taskbar-ink: #252525;
+  --taskbar-muted: #686662;
+  --taskbar-accent: #252525;
+}
+
+body[data-theme="dark"] {
   color-scheme: dark;
   --taskbar-surface: rgba(30, 31, 33, .96);
   --taskbar-line: rgba(255, 255, 255, .16);
@@ -16,7 +25,8 @@ body { padding: 3px; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; }
   color: var(--taskbar-ink); background: var(--taskbar-surface);
   box-shadow: 0 3px 12px rgba(0, 0, 0, .28); cursor: pointer; text-align: left;
 }
-.taskbar-status:hover { border-color: rgba(255, 255, 255, .3); background: #292a2c; }
+.taskbar-status:hover { border-color: rgba(37, 37, 37, .3); background: #eeece8; }
+body[data-theme="dark"] .taskbar-status:hover { border-color: rgba(255, 255, 255, .3); background: #292a2c; }
 .taskbar-status:focus-visible { outline: 2px solid var(--taskbar-accent); outline-offset: 1px; }
 .taskbar-icon { width: 21px; height: 21px; display: block; flex: 0 0 auto; transform: translateY(-1px); }
 .status-group { display: grid; min-width: 38px; gap: 1px; }
