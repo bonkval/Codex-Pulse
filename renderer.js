@@ -340,7 +340,11 @@ function renderPet(activity) {
     petTypingTarget = '';
     $('pet-message').textContent = '';
   }
-  window.codexPulse.setPetExpanded(visible).then((expanded) => { document.body.dataset.petExpanded = expanded ? 'true' : 'false'; });
+  // The main process owns the native mini-window bounds and sends the
+  // authoritative pet:expanded event. Do not apply the asynchronous return
+  // value here: a stale response can arrive after dragging has collapsed the
+  // native window and make the bubble render inside 48x48 bounds.
+  void window.codexPulse.setPetExpanded(visible).catch(() => {});
 }
 
 function renderAccount(data) {
