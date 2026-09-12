@@ -289,8 +289,27 @@ class CodexActivityBridge {
 
   poll() {
     const nextFile = latestSessionFile(this.root);
-    if (!nextFile) return;
-    if (nextFile !== this.filePath) this.resetForFile(nextFile);
+    if (!nextFile) {
+      const hadActivity = this.activeTask || this.state !== IDLE_ACTIVITY.state;
+      this.filePath = null;
+      this.offset = 0;
+      this.remainder = '';
+      this.accepted = false;
+      this.activeTask = false;
+      this.taskId = null;
+      this.sessionId = null;
+      this.turnUsage.clear();
+      this.latestUsageSignature = '';
+      this.latestPrimary = null;
+      this.latestSecondary = null;
+      if (hadActivity) this.emit('idle', IDLE_ACTIVITY.text);
+      return;
+    }
+    if (nextFile !== this.filePath) {
+      const hadActivity = this.activeTask || this.state !== IDLE_ACTIVITY.state;
+      this.resetForFile(nextFile);
+      if (hadActivity) this.onActivity({ ...IDLE_ACTIVITY, source: 'vscode-session-bridge', sessionId: null, threadId: null });
+    }
     let stat;
     try { stat = fs.statSync(this.filePath); } catch (_) { return; }
     const changed = this.readAppendedData(stat);

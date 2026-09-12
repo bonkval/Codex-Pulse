@@ -2,7 +2,7 @@
 
 Codex Pulse is a lightweight Windows companion for Codex. It stays near your tray and shows your remaining 5-hour and weekly usage, live token activity, and what Codex is currently doing in VS Code.
 
-**Current version: 1.5.5**
+**Current version: 1.5.4**
 
 > **[Download the latest Codex Pulse installer](https://github.com/bonkval/Codex-Pulse/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
@@ -41,6 +41,7 @@ Codex Pulse runs as a normal Windows app. No PowerShell, terminal, Node.js, or V
 - Provides connection diagnostics, a clipboard-ready report, and local history clear/backup/restore controls.
 - Shows plan, connection health, last sync time, and reset credits when provided.
 - Supports light, dark, and system themes.
+- Supports taskbar-only mode with essential usage and activity information inside the Windows taskbar.
 - Supports compact mode, adjustable popup size and opacity, always-on-top, start minimized, pause monitoring, and per-monitor positions.
 - Can be moved anywhere and remembers its position across restarts and monitors.
 - Minimizes to a compact floating logo and restores when clicked.

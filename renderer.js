@@ -419,6 +419,7 @@ function renderUsage(data) {
     setRow('secondary', null);
     retryButton.hidden = false;
     clearDashboard();
+    window.codexPulse.updateTray({ primary: null, secondary: null, todayTokens: null, activity: { state: 'error', text: 'Codex unavailable' } });
     return;
   }
   document.body.classList.remove('loading', 'error-state');

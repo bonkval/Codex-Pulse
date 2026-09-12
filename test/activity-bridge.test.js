@@ -53,3 +53,21 @@ test('bridges live token counts and rate limits from the VS Code session', () =>
   bridge.stop();
   fs.rmSync(homeDir, { recursive: true, force: true });
 });
+
+test('returns to idle when the active session file disappears', () => {
+  const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-pulse-'));
+  const sessionDir = path.join(homeDir, '.codex', 'sessions', '2026', '09', '11');
+  fs.mkdirSync(sessionDir, { recursive: true });
+  const sessionPath = path.join(sessionDir, 'rollout-disappearing.jsonl');
+  const record = (type, payload) => JSON.stringify({ timestamp: new Date().toISOString(), type, payload }) + '\n';
+  fs.writeFileSync(sessionPath, record('session_meta', { source: 'vscode' }) + record('event_msg', { type: 'task_started', turn_id: 'disappearing-turn' }));
+  const events = [];
+  const bridge = new CodexActivityBridge({ homeDir, onActivity: (activity) => events.push(activity) });
+  bridge.poll();
+  assert.equal(events.at(-1).state, 'working');
+  fs.rmSync(sessionPath);
+  bridge.poll();
+  assert.equal(events.at(-1).state, 'idle');
+  bridge.stop();
+  fs.rmSync(homeDir, { recursive: true, force: true });
+});

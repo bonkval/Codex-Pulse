@@ -1,6 +1,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const MAX_ANALYTICS_FILES = 1000;
+const MAX_SESSION_FILE_BYTES = 25 * 1024 * 1024;
+
 function safeEntries(directory) {
   try { return fs.readdirSync(directory, { withFileTypes: true }); } catch (_) { return []; }
 }
@@ -137,9 +140,12 @@ function aggregate(sessions, retentionDays) {
 
 function scanSessionAnalytics(root, { retentionDays = 90 } = {}) {
   const sessions = [];
-  for (const filePath of sessionFiles(root)) {
-    let stat;
-    try { stat = fs.statSync(filePath); } catch (_) { continue; }
+  const candidates = sessionFiles(root).map((filePath) => {
+    try { return { filePath, stat: fs.statSync(filePath) }; } catch (_) { return null; }
+  }).filter((candidate) => candidate && candidate.stat.size <= MAX_SESSION_FILE_BYTES)
+    .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)
+    .slice(0, MAX_ANALYTICS_FILES);
+  for (const { filePath, stat } of candidates) {
     const session = parseSession(filePath, stat);
     if (session) sessions.push(session);
   }

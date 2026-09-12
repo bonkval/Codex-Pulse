@@ -44,6 +44,10 @@ const DEFAULT_SETTINGS = {
   position: null,
 };
 
+const MAX_IMPORTED_HISTORY_BYTES = 10 * 1024 * 1024;
+const MAX_IMPORTED_DAILY_ENTRIES = 365;
+const MAX_IMPORTED_SNAPSHOT_ENTRIES = 5000;
+
 let popup;
 let tray;
 let trayMenu;
@@ -112,7 +116,7 @@ function loadHistory() {
 function saveHistory() {
   trimHistory();
   fs.mkdirSync(app.getPath('userData'), { recursive: true });
-  fs.writeFileSync(historyPath(), JSON.stringify(usageHistory, null, 2));
+  atomicWrite(historyPath(), JSON.stringify(usageHistory, null, 2));
 }
 
 function saveHistorySoon() {
@@ -215,7 +219,19 @@ function registerGlobalShortcut(accelerator) {
 
 function saveSettings() {
   fs.mkdirSync(app.getPath('userData'), { recursive: true });
-  fs.writeFileSync(settingsPath(), JSON.stringify(settings, null, 2));
+  atomicWrite(settingsPath(), JSON.stringify(settings, null, 2));
+}
+
+function atomicWrite(filePath, content) {
+  const temporaryPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  try {
+    fs.writeFileSync(temporaryPath, content, 'utf8');
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    if (fs.existsSync(temporaryPath)) {
+      try { fs.unlinkSync(temporaryPath); } catch (_) { /* Preserve the last good file if cleanup is interrupted. */ }
+    }
+  }
 }
 
 function updateSettings(patch) {
@@ -321,7 +337,7 @@ function setLiveUsage(usage) {
     const byDate = new Map(usageHistory.daily.map((entry) => [entry.date, entry]));
     const previous = Number(byDate.get(usage.date)?.tokens) || 0;
     byDate.set(usage.date, { date: usage.date, tokens: Math.max(previous, Number(usage.dailyTokens)) });
-    usageHistory.daily = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-90);
+    usageHistory.daily = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date)).slice(-retentionDays());
     saveHistorySoon();
   }
   if (usage.primary || usage.secondary) {
@@ -854,6 +870,24 @@ function showPopup() {
   }
 }
 
+function hardenWindowNavigation(window) {
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith('file://')) event.preventDefault();
+  });
+}
+
+function isTrustedIpcSender(event) {
+  return [popup, taskbarWindow].some((window) => window && !window.isDestroyed() && event.sender === window.webContents);
+}
+
+function handleTrusted(channel, handler) {
+  ipcMain.handle(channel, (event, ...args) => {
+    if (!isTrustedIpcSender(event)) throw new Error('Unauthorized IPC sender');
+    return handler(event, ...args);
+  });
+}
+
 function setPopupView(minimized) {
   if (!popup || popup.isDestroyed() || isMinimized === minimized) return;
   const bounds = popup.getBounds();
@@ -916,8 +950,10 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
+  hardenWindowNavigation(popup);
   popup.setAlwaysOnTop(settings.alwaysOnTop, 'screen-saver');
   popup.setOpacity(settings.popupOpacity / 100);
   positionPopup();
@@ -1002,11 +1038,13 @@ function createTaskbarStatus() {
     hasShadow: false,
     backgroundColor: '#00000000',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'taskbar-preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: true,
     },
   });
+  hardenWindowNavigation(taskbarWindow);
   taskbarWindow.setAlwaysOnTop(true, 'screen-saver');
   taskbarWindow.loadFile(path.join(__dirname, 'taskbar.html'));
   taskbarWindow.webContents.once('did-finish-load', () => {
@@ -1065,20 +1103,20 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   createTaskbarStatus();
-  ipcMain.handle('usage:read', () => usageClient.readUsage());
-  ipcMain.handle('app:hide', () => popup.hide());
-  ipcMain.handle('app:show', () => showPopup());
-  ipcMain.handle('app:set-view', (_event, minimized) => setPopupView(Boolean(minimized)));
-  ipcMain.handle('app:mini-dragging', (_event, dragging) => {
+  handleTrusted('usage:read', () => usageClient.readUsage());
+  handleTrusted('app:hide', () => popup.hide());
+  handleTrusted('app:show', () => showPopup());
+  handleTrusted('app:set-view', (_event, minimized) => setPopupView(Boolean(minimized)));
+  handleTrusted('app:mini-dragging', (_event, dragging) => {
     miniDragging = Boolean(dragging);
     if (miniDragging) setPetExpanded(false);
     else setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
     return miniDragging;
   });
-  ipcMain.handle('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
-  ipcMain.handle('settings:read', () => ({ ...settings, globalShortcutError }));
-  ipcMain.handle('settings:update', (_event, patch) => commitSettings(patch));
-  ipcMain.handle('settings:choose-codex', async () => {
+  handleTrusted('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
+  handleTrusted('settings:read', () => ({ ...settings, globalShortcutError }));
+  handleTrusted('settings:update', (_event, patch) => commitSettings(patch));
+  handleTrusted('settings:choose-codex', async () => {
     const result = await dialog.showOpenDialog(popup, {
       title: 'Choose Codex executable',
       properties: ['openFile'],
@@ -1087,14 +1125,14 @@ app.whenReady().then(() => {
     if (result.canceled || !result.filePaths[0]) return { ...settings };
     return commitSettings({ codexPath: result.filePaths[0] });
   });
-  ipcMain.handle('settings:reset-position', () => {
+  handleTrusted('settings:reset-position', () => {
     settings.position = null;
     saveSettings();
     if (isMinimized) setPopupView(false);
     positionPopup();
     return { ...settings };
   });
-  ipcMain.handle('history:export', async (_event, format = 'json') => {
+  handleTrusted('history:export', async (_event, format = 'json') => {
     const extension = format === 'csv' ? 'csv' : 'json';
     const result = await dialog.showSaveDialog(popup, {
       title: 'Export Codex usage history',
@@ -1109,7 +1147,7 @@ app.whenReady().then(() => {
     fs.writeFileSync(result.filePath, content, 'utf8');
     return { canceled: false, path: result.filePath };
   });
-  ipcMain.handle('history:import', async () => {
+  handleTrusted('history:import', async () => {
     const result = await dialog.showOpenDialog(popup, {
       title: 'Import Codex Pulse history backup',
       properties: ['openFile'],
@@ -1117,17 +1155,20 @@ app.whenReady().then(() => {
     });
     if (result.canceled || !result.filePaths[0]) return { canceled: true };
     try {
-      const imported = JSON.parse(fs.readFileSync(result.filePaths[0], 'utf8'));
+      const importPath = result.filePaths[0];
+      const importStat = fs.statSync(importPath);
+      if (importStat.size > MAX_IMPORTED_HISTORY_BYTES) throw new Error('This history backup is too large to import.');
+      const imported = JSON.parse(fs.readFileSync(importPath, 'utf8'));
       if (!Array.isArray(imported.daily) && !Array.isArray(imported.snapshots)) throw new Error('This file is not a Codex Pulse history backup.');
-      if (Array.isArray(imported.daily)) usageHistory.daily = imported.daily.filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && Number.isFinite(Number(entry.tokens))).map((entry) => ({ date: entry.date, tokens: Math.max(0, Number(entry.tokens)) }));
-      if (Array.isArray(imported.snapshots)) usageHistory.snapshots = imported.snapshots.filter((entry) => entry && Number.isFinite(Number(entry.timestamp)));
+      if (Array.isArray(imported.daily)) usageHistory.daily = imported.daily.filter((entry) => entry && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && Number.isFinite(Number(entry.tokens))).map((entry) => ({ date: entry.date, tokens: Math.max(0, Number(entry.tokens)) })).slice(-MAX_IMPORTED_DAILY_ENTRIES);
+      if (Array.isArray(imported.snapshots)) usageHistory.snapshots = imported.snapshots.filter((entry) => entry && Number.isFinite(Number(entry.timestamp))).slice(-MAX_IMPORTED_SNAPSHOT_ENTRIES);
       saveHistory();
       return { canceled: false, imported: true };
     } catch (error) {
       return { canceled: false, imported: false, error: error.message || 'Unable to import history.' };
     }
   });
-  ipcMain.handle('history:clear', async () => {
+  handleTrusted('history:clear', async () => {
     const result = await dialog.showMessageBox(popup, {
       type: 'warning',
       buttons: ['Cancel', 'Clear local history'],
@@ -1141,26 +1182,27 @@ app.whenReady().then(() => {
     saveHistory();
     return { cleared: true };
   });
-  ipcMain.handle('tray:update', (_event, data) => {
+  handleTrusted('tray:update', (_event, data) => {
     updateTrayTooltip(data);
     return true;
   });
-  ipcMain.handle('notifications:show', (_event, data) => showUsageNotification(data));
-  ipcMain.handle('diagnostics:run', () => runDiagnostics());
-  ipcMain.handle('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });
-  ipcMain.handle('pet:clear', () => { clearPetNotification(); return true; });
-  ipcMain.handle('app:check-updates', () => checkForUpdates());
-  ipcMain.handle('app:download-update', async () => {
+  handleTrusted('notifications:show', (_event, data) => showUsageNotification(data));
+  handleTrusted('diagnostics:run', () => runDiagnostics());
+  handleTrusted('pet:set-expanded', (_event, expanded) => { setPetExpanded(Boolean(expanded)); return petExpanded; });
+  handleTrusted('pet:clear', () => { clearPetNotification(); return true; });
+  handleTrusted('app:check-updates', () => checkForUpdates());
+  handleTrusted('app:download-update', async () => {
     if (!app.isPackaged) return false;
     await autoUpdater.downloadUpdate();
     return true;
   });
-  ipcMain.handle('app:install-update', () => {
+  handleTrusted('app:install-update', () => {
     if (app.isPackaged) autoUpdater.quitAndInstall();
     return true;
   });
-  ipcMain.handle('app:quit', () => { isQuitting = true; app.quit(); });
-  ipcMain.on('app:move', (_event, delta) => {
+  handleTrusted('app:quit', () => { isQuitting = true; app.quit(); });
+  ipcMain.on('app:move', (event, delta) => {
+    if (!isTrustedIpcSender(event)) return;
     if (!popup || popup.isDestroyed() || !delta) return;
     const dx = Number(delta.dx || 0);
     const dy = Number(delta.dy || 0);

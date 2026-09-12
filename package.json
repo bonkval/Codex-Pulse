@@ -12,7 +12,7 @@
     "dist": "electron-builder --win"
   },
   "devDependencies": {
-    "electron": "^38.1.0",
+    "electron": "^44.3.0",
     "electron-builder": "^26.0.12"
   },
   "build": {
@@ -24,6 +24,7 @@
       "activity-bridge.js",
       "session-analytics.js",
       "preload.js",
+      "taskbar-preload.js",
       "usage-logic.js",
       "index.html",
       "taskbar.html",
