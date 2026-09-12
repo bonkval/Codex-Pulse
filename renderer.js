@@ -32,6 +32,8 @@ let historyTooltipPinned = false;
 let suppressMiniClick = false;
 let miniDragging = false;
 let miniDragGeneration = 0;
+let pendingMiniMove = null;
+let miniMoveFrame = null;
 let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, taskbarMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
 const notificationLevels = { primary: null, secondary: null };
 
@@ -369,12 +371,28 @@ function restorePetAfterDragging() {
 
 function finishMiniDragging() {
   const generation = ++miniDragGeneration;
-  const restore = window.codexPulse.setMiniDragging(false);
-  void restore.then(() => {
+  miniDragging = false;
+  window.codexPulse.setMiniDragging(false);
+  window.setTimeout(() => {
     if (!miniDragging && generation === miniDragGeneration) restorePetAfterDragging();
-  }).catch(() => {
-    if (!miniDragging && generation === miniDragGeneration) restorePetAfterDragging();
-  });
+  }, 100);
+}
+
+function flushMiniMove() {
+  if (miniMoveFrame !== null) {
+    cancelAnimationFrame(miniMoveFrame);
+    miniMoveFrame = null;
+  }
+  const move = pendingMiniMove;
+  pendingMiniMove = null;
+  if (move && (move.dx || move.dy)) window.codexPulse.moveBy(move.dx, move.dy);
+}
+
+function queueMiniMove(dx, dy) {
+  pendingMiniMove = pendingMiniMove
+    ? { dx: pendingMiniMove.dx + dx, dy: pendingMiniMove.dy + dy }
+    : { dx, dy };
+  if (miniMoveFrame === null) miniMoveFrame = requestAnimationFrame(flushMiniMove);
 }
 
 function renderAccount(data) {
@@ -662,7 +680,7 @@ miniView.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
   suppressMiniClick = false;
   hidePetWhileDragging();
-  void window.codexPulse.setMiniDragging(true).catch(() => {});
+  window.codexPulse.setMiniDragging(true);
   dragState = { pointerId: event.pointerId, x: event.screenX, y: event.screenY, startX: event.screenX, startY: event.screenY };
   miniView.classList.add('is-dragging');
   miniView.setPointerCapture(event.pointerId);
@@ -674,11 +692,12 @@ miniView.addEventListener('pointermove', (event) => {
   if (Math.abs(event.screenX - dragState.startX) > 4 || Math.abs(event.screenY - dragState.startY) > 4) suppressMiniClick = true;
   dragState.x = event.screenX;
   dragState.y = event.screenY;
-  window.codexPulse.moveBy(dx, dy);
+  queueMiniMove(dx, dy);
 });
 miniView.addEventListener('pointerup', (event) => {
   if (!dragState || event.pointerId !== dragState.pointerId) return;
   dragState = null;
+  flushMiniMove();
   miniView.classList.remove('is-dragging');
   if (miniView.hasPointerCapture(event.pointerId)) miniView.releasePointerCapture(event.pointerId);
   finishMiniDragging();
@@ -687,12 +706,14 @@ miniView.addEventListener('pointerup', (event) => {
 miniView.addEventListener('pointercancel', () => {
   if (!miniDragging) return;
   dragState = null;
+  flushMiniMove();
   miniView.classList.remove('is-dragging');
   finishMiniDragging();
 });
 window.addEventListener('blur', () => {
   if (!dragState) return;
   dragState = null;
+  flushMiniMove();
   miniView.classList.remove('is-dragging');
   finishMiniDragging();
 });

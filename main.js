@@ -1107,11 +1107,11 @@ app.whenReady().then(() => {
   handleTrusted('app:hide', () => popup.hide());
   handleTrusted('app:show', () => showPopup());
   handleTrusted('app:set-view', (_event, minimized) => setPopupView(Boolean(minimized)));
-  handleTrusted('app:mini-dragging', (_event, dragging) => {
+  ipcMain.on('app:mini-dragging', (event, dragging) => {
+    if (!isTrustedIpcSender(event)) return;
     miniDragging = Boolean(dragging);
     if (miniDragging) setPetExpanded(false);
     else setPetExpanded(currentActivity.state !== 'idle' && settings.petEnabled);
-    return miniDragging;
   });
   handleTrusted('app:open-codex', () => shell.openExternal('https://chatgpt.com/codex'));
   handleTrusted('settings:read', () => ({ ...settings, globalShortcutError }));
@@ -1219,7 +1219,7 @@ app.whenReady().then(() => {
       // the activity bubble appear to stretch or drift during a drag.
       expandedBounds = null;
       miniAnchor = safePetAnchor({ x: miniAnchor.x + moveX, y: miniAnchor.y + moveY }, petExpanded);
-      popup.setBounds(petBoundsForAnchor(miniAnchor), false);
+      popup.setPosition(miniAnchor.x, miniAnchor.y, false);
     } else {
       const [x, y] = popup.getPosition();
       popup.setPosition(Math.round(x + moveX), Math.round(y + moveY), false);
