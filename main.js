@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
   theme: 'system',
   notificationsEnabled: true,
   quietMode: false,
+  taskbarMode: false,
   dailyTokenTarget: 0,
   petEnabled: true,
   globalShortcut: 'CommandOrControl+Shift+Alt+P',
@@ -43,6 +44,9 @@ const DEFAULT_SETTINGS = {
 
 let popup;
 let tray;
+let trayMenu;
+let trayStatusItem;
+let trayTaskbarItem;
 let pollTimer;
 let activityBridge;
 let positionSaveTimer;
@@ -158,6 +162,7 @@ function loadSettings() {
       popupSize: Object.prototype.hasOwnProperty.call(WINDOW_SIZES, saved.popupSize) ? saved.popupSize : DEFAULT_SETTINGS.popupSize,
       compactMode: Boolean(saved.compactMode),
       startMinimized: Boolean(saved.startMinimized),
+      taskbarMode: Boolean(saved.taskbarMode),
       monitoringPaused: Boolean(saved.monitoringPaused),
       historyRetentionDays: [30, 90, 365].includes(Number(saved.historyRetentionDays)) ? Number(saved.historyRetentionDays) : DEFAULT_SETTINGS.historyRetentionDays,
       rememberPerMonitor: Boolean(saved.rememberPerMonitor),
@@ -216,6 +221,7 @@ function updateSettings(patch) {
   if (['system', 'light', 'dark'].includes(patch.theme)) settings.theme = patch.theme;
   if (typeof patch.notificationsEnabled === 'boolean') settings.notificationsEnabled = patch.notificationsEnabled;
   if (typeof patch.quietMode === 'boolean') settings.quietMode = patch.quietMode;
+  if (typeof patch.taskbarMode === 'boolean') settings.taskbarMode = patch.taskbarMode;
   if (typeof patch.petEnabled === 'boolean') settings.petEnabled = patch.petEnabled;
   if (Array.isArray(patch.primaryAlertThresholds)) settings.primaryAlertThresholds = patch.primaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
   if (Array.isArray(patch.secondaryAlertThresholds)) settings.secondaryAlertThresholds = patch.secondaryAlertThresholds.map(Number).filter((value) => [50, 25, 10].includes(value));
@@ -257,6 +263,10 @@ function commitSettings(patch) {
   if (previous.petEnabled !== next.petEnabled && !miniDragging) setPetExpanded(next.petEnabled && currentActivity.state !== 'idle');
   if (previous.alwaysOnTop !== next.alwaysOnTop) popup?.setAlwaysOnTop(next.alwaysOnTop, 'screen-saver');
   if (previous.popupOpacity !== next.popupOpacity) popup?.setOpacity(next.popupOpacity / 100);
+  if (previous.taskbarMode !== next.taskbarMode) {
+    if (trayTaskbarItem) trayTaskbarItem.checked = next.taskbarMode;
+    if (next.taskbarMode && popup && !popup.isDestroyed()) popup.hide();
+  }
   if (previous.popupSize !== next.popupSize && popup && !popup.isDestroyed() && !isMinimized) {
     const size = getWindowSize();
     const bounds = popup.getBounds();
@@ -360,6 +370,7 @@ function updateTrayTooltip(data) {
   const today = Number.isFinite(Number(data?.todayTokens)) ? `${Math.round(Number(data.todayTokens)).toLocaleString()} tokens` : '-';
   const active = data?.activity?.state === 'working' ? ` - ${data.activity.text || 'Codex working'}` : '';
   tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}${active}`);
+  if (trayStatusItem) trayStatusItem.label = `5-hour ${primary} · Weekly ${secondary} · Today ${today}`;
 }
 
 function showUsageNotification(data) {
@@ -889,11 +900,11 @@ function createWindow() {
   positionPopup();
   popup.loadFile(path.join(__dirname, 'index.html'));
   const revealPopup = () => {
-    if (popup.isDestroyed() || process.argv.includes('--hidden') || settings.quietMode) return;
+    if (popup.isDestroyed() || process.argv.includes('--hidden') || settings.quietMode || settings.taskbarMode) return;
     if (settings.startMinimized && !isMinimized) setPopupView(true);
     showPopup();
   };
-  if (!process.argv.includes('--hidden') && !settings.quietMode) {
+  if (!process.argv.includes('--hidden') && !settings.quietMode && !settings.taskbarMode) {
     showPopup();
   }
   popup.once('ready-to-show', revealPopup);
@@ -914,7 +925,12 @@ function createTray() {
     if (popup.isVisible()) popup.hide();
     else showPopup();
   });
-  tray.setContextMenu(Menu.buildFromTemplate([
+  trayStatusItem = { label: '5-hour - · Weekly - · Today -', enabled: false };
+  trayTaskbarItem = { label: 'Taskbar-only mode', type: 'checkbox', checked: settings.taskbarMode, click: (item) => commitSettings({ taskbarMode: item.checked }) };
+  trayMenu = Menu.buildFromTemplate([
+    { label: 'Codex Pulse status', enabled: false },
+    trayStatusItem,
+    { type: 'separator' },
     { label: 'Show Codex Pulse', click: () => showPopup() },
     { label: 'Refresh usage', click: () => popup.webContents.send('usage:refresh') },
     { label: 'Open settings', click: () => { showPopup(); popup.webContents.send('settings:open'); } },
@@ -922,9 +938,13 @@ function createTray() {
     { label: 'Open Codex', click: () => shell.openExternal('https://chatgpt.com/codex') },
     { label: 'Launch at startup', type: 'checkbox', checked: settings.launchAtStartup, click: (item) => commitSettings({ launchAtStartup: item.checked }) },
     { label: 'Quiet mode', type: 'checkbox', checked: settings.quietMode, click: (item) => commitSettings({ quietMode: item.checked }) },
+    trayTaskbarItem,
     { type: 'separator' },
     { label: 'Quit Codex Pulse', click: () => { isQuitting = true; app.quit(); } },
-  ]));
+  ]);
+  trayStatusItem = trayMenu.items.find((item) => item.label === '5-hour - · Weekly - · Today -');
+  trayTaskbarItem = trayMenu.items.find((item) => item.label === 'Taskbar-only mode');
+  tray.setContextMenu(trayMenu);
 }
 
 if (!hasSingleInstanceLock) {

@@ -30,7 +30,7 @@ let currentPetActivity = { state: 'idle', text: 'Waiting for Codex' };
 let activeHistoryBar = null;
 let historyTooltipPinned = false;
 let suppressMiniClick = false;
-let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
+let settings = { launchAtStartup: true, refreshInterval: 30, codexPath: '', theme: 'system', notificationsEnabled: true, quietMode: false, taskbarMode: false, dailyTokenTarget: 0, globalShortcut: 'CommandOrControl+Shift+Alt+P', primaryAlertThresholds: [50, 25, 10], secondaryAlertThresholds: [50, 25, 10], alwaysOnTop: true, popupOpacity: 100, popupSize: 'normal', compactMode: false, startMinimized: false, monitoringPaused: false, historyRetentionDays: 90, rememberPerMonitor: false };
 const notificationLevels = { primary: null, secondary: null };
 
 function effectiveTheme(theme) {
@@ -477,6 +477,7 @@ function updateSettingsPanel(next) {
   $('startup-toggle').checked = settings.launchAtStartup;
   $('notifications-toggle').checked = settings.notificationsEnabled;
   $('quiet-toggle').checked = settings.quietMode;
+  $('taskbar-toggle').checked = settings.taskbarMode;
   $('pet-toggle').checked = settings.petEnabled !== false;
   $('daily-target-input').value = settings.dailyTokenTarget || '';
   $('codex-path-label').textContent = settings.codexPath || 'Automatically detected';
@@ -545,6 +546,7 @@ $('refresh-select').addEventListener('change', (event) => saveSetting({ refreshI
 $('startup-toggle').addEventListener('change', (event) => saveSetting({ launchAtStartup: event.target.checked }));
 $('notifications-toggle').addEventListener('change', (event) => saveSetting({ notificationsEnabled: event.target.checked }));
 $('quiet-toggle').addEventListener('change', (event) => saveSetting({ quietMode: event.target.checked }));
+$('taskbar-toggle').addEventListener('change', (event) => saveSetting({ taskbarMode: event.target.checked }));
 $('pet-toggle').addEventListener('change', (event) => saveSetting({ petEnabled: event.target.checked }));
 $('daily-target-input').addEventListener('change', (event) => saveSetting({ dailyTokenTarget: event.target.value }));
 $('popup-size-select').addEventListener('change', (event) => saveSetting({ popupSize: event.target.value }));
