@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { autoUpdater } = require('electron-updater');
 const { CodexActivityBridge } = require('./activity-bridge');
-const { scanSessionAnalytics } = require('./session-analytics');
+const { Worker } = require('node:worker_threads');
 
 const WINDOW_WIDTH = 420;
 const WINDOW_HEIGHT = 620;
@@ -13,8 +13,8 @@ const MINI_WIDTH = 48;
 const MINI_HEIGHT = 48;
 const PET_WIDTH = 240;
 const PET_HEIGHT = 118;
-const TASKBAR_WIDTH = 250;
-const TASKBAR_HEIGHT = 42;
+const TASKBAR_WIDTH = 196;
+const TASKBAR_HEIGHT = 36;
 const TASKBAR_SYSTEM_TRAY_RESERVE = 380;
 const LOGO_ANCHOR_X = 22;
 const LOGO_ANCHOR_Y = 22;
@@ -24,7 +24,7 @@ const DEFAULT_SETTINGS = {
   launchAtStartup: true,
   refreshInterval: 30,
   codexPath: '',
-  theme: 'system',
+  theme: 'dark',
   notificationsEnabled: true,
   quietMode: false,
   taskbarMode: false,
@@ -76,6 +76,26 @@ let latestUpdateState = { status: 'checking' };
 let registeredGlobalShortcut = null;
 let globalShortcutError = null;
 let latestAnalytics = { sessions: [], projects: [], models: [] };
+let analyticsWorker;
+let analyticsPending = false;
+function refreshAnalytics() {
+  if (analyticsPending) return;
+  if (!analyticsWorker) {
+    analyticsWorker = new Worker(path.join(__dirname, 'analytics-worker.js'));
+    analyticsWorker.on('message', (result) => {
+      analyticsPending = false;
+      if (result) {
+        latestAnalytics = result;
+        if (popup && !popup.isDestroyed() && !popup.webContents.isLoading()) popup.webContents.send('usage:live', { analytics: latestAnalytics });
+      }
+    });
+    analyticsWorker.on('error', () => { analyticsPending = false; });
+    analyticsWorker.on('exit', () => { analyticsWorker = null; analyticsPending = false; });
+    analyticsWorker.unref();
+  }
+  analyticsPending = true;
+  analyticsWorker.postMessage({ root: path.join(app.getPath('home'), '.codex', 'sessions'), retentionDays: retentionDays() });
+}
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 
 function getWindowSize() {
@@ -293,15 +313,18 @@ function commitSettings(patch) {
       showTaskbarStatus();
     } else {
       hideTaskbarStatus();
+      showPopup();
     }
   }
   if (previous.popupSize !== next.popupSize && popup && !popup.isDestroyed() && !isMinimized) {
     const size = getWindowSize();
+    popup.setMaximumSize(size.width, size.height);
     const bounds = popup.getBounds();
     popup.setBounds({ ...clampPosition(bounds.x, bounds.y), width: size.width, height: size.height }, false);
   }
   if (previous.historyRetentionDays !== next.historyRetentionDays) { trimHistory(); saveHistory(); }
   if (previous.monitoringPaused !== next.monitoringPaused) {
+    startPolling();
     if (next.monitoringPaused) activityBridge?.stop();
     else startActivityBridge();
   }
@@ -309,7 +332,17 @@ function commitSettings(patch) {
 }
 
 function applyStartupSetting() {
-  app.setLoginItemSettings({ openAtLogin: settings.launchAtStartup });
+  // In development, process.execPath is the Electron runtime itself. Windows
+  // will therefore open Electron's welcome screen unless the app directory is
+  // passed as a command-line argument. Packaged builds already use their own
+  // executable as the app entry point and must not receive that argument.
+  const loginItem = {
+    openAtLogin: settings.launchAtStartup,
+    path: process.execPath,
+    args: app.isPackaged ? [] : [app.getAppPath()],
+  };
+
+  app.setLoginItemSettings(loginItem);
 }
 
 function startPolling() {
@@ -345,7 +378,7 @@ function setLiveUsage(usage) {
     addUsageSnapshot(usage.primary, usage.secondary);
     saveHistorySoon();
   }
-  if (popup && !popup.isDestroyed() && !popup.webContents.isLoading()) {
+  if (!settings.monitoringPaused && popup && !popup.isDestroyed() && !popup.webContents.isLoading()) {
     popup.webContents.send('usage:live', {
       liveSession: latestLiveUsage,
       liveDailyUsage: usage.date ? { date: usage.date, tokens: usage.dailyTokens } : null,
@@ -403,9 +436,9 @@ function updateTaskbarTheme() {
 
 function updateTrayTooltip(data) {
   if (!tray || tray.isDestroyed()) return;
-  const primary = Number.isFinite(Number(data?.primary)) ? `${Math.round(Number(data.primary))}%` : '-';
-  const secondary = Number.isFinite(Number(data?.secondary)) ? `${Math.round(Number(data.secondary))}%` : '-';
-  const today = Number.isFinite(Number(data?.todayTokens)) ? `${Math.round(Number(data.todayTokens)).toLocaleString()} tokens` : '-';
+  const primary = data?.primary != null && Number.isFinite(Number(data.primary)) ? `${Math.round(Number(data.primary))}%` : '-';
+  const secondary = data?.secondary != null && Number.isFinite(Number(data.secondary)) ? `${Math.round(Number(data.secondary))}%` : '-';
+  const today = data?.todayTokens != null && Number.isFinite(Number(data.todayTokens)) ? `${Math.round(Number(data.todayTokens)).toLocaleString()} tokens` : '-';
   const active = data?.activity?.state === 'working' ? ` - ${data.activity.text || 'Codex working'}` : '';
   tray.setToolTip(`Codex Pulse - 5-hour ${primary} left - weekly ${secondary} left - today ${today}${active}`);
   if (trayStatusItem) trayStatusItem.label = `5-hour ${primary} · Weekly ${secondary} · Today ${today}`;
@@ -792,7 +825,7 @@ class CodexUsageClient {
       ]);
       this.lastAccountAuthRequired = accountResult?.requiresOpenaiAuth ?? null;
       const activity = currentActivity;
-      latestAnalytics = scanSessionAnalytics(path.join(app.getPath('home'), '.codex', 'sessions'), { retentionDays: retentionDays() });
+      refreshAnalytics();
       mergeDailyHistory(tokenResult?.dailyUsageBuckets);
       addUsageSnapshot(snapshot.primary, snapshot.secondary);
       saveHistory();
@@ -910,6 +943,7 @@ function setPopupView(minimized) {
   } else {
     const restoreBounds = expandedBounds || bounds;
     const size = getWindowSize();
+    popup.setMaximumSize(size.width, size.height);
     miniDragging = false;
     popup.setBounds({
       x: restoreBounds.x,
@@ -970,6 +1004,14 @@ function createWindow() {
   popup.once('ready-to-show', revealPopup);
   popup.webContents.once('did-finish-load', () => setTimeout(revealPopup, 80));
   setTimeout(revealPopup, 1500);
+  popup.on('blur', () => {
+    setTimeout(() => {
+      if (popup && !popup.isDestroyed() && popup.isVisible() && settings.alwaysOnTop) {
+        popup.setAlwaysOnTop(true, 'screen-saver');
+        popup.moveTop();
+      }
+    }, 100);
+  });
   popup.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -985,19 +1027,22 @@ function getTaskbarStatusBounds() {
   const topGap = workArea.y - y;
   const bottomGap = y + height - (workArea.y + workArea.height);
   const taskbarAtTop = topGap > bottomGap;
-  const reservedTaskbarHeight = Math.max(TASKBAR_HEIGHT, bottomGap);
+  const reservedTaskbarHeight = Math.max(TASKBAR_HEIGHT, taskbarAtTop ? topGap : bottomGap);
   // Leave room for Windows' language, network, audio, battery, clock, and
   // notification controls so the chip never covers the system tray area.
   const statusX = Math.max(workArea.x + 12, workArea.x + workArea.width - TASKBAR_WIDTH - TASKBAR_SYSTEM_TRAY_RESERVE);
+  const verticalInset = Math.round((reservedTaskbarHeight - TASKBAR_HEIGHT) / 2);
   const statusY = taskbarAtTop
-    ? y + 3
-    : y + height - reservedTaskbarHeight + 3;
+    ? y + verticalInset
+    : y + height - reservedTaskbarHeight + verticalInset;
   return { x: statusX, y: statusY, width: TASKBAR_WIDTH, height: TASKBAR_HEIGHT };
 }
 
 function positionTaskbarStatus() {
   if (!taskbarWindow || taskbarWindow.isDestroyed()) return;
-  taskbarWindow.setBounds(getTaskbarStatusBounds(), false);
+  const next = getTaskbarStatusBounds();
+  const current = taskbarWindow.getBounds();
+  if (Object.keys(next).some((key) => next[key] !== current[key])) taskbarWindow.setBounds(next, false);
 }
 
 function showTaskbarStatus() {
@@ -1014,10 +1059,12 @@ function showTaskbarStatus() {
       return;
     }
     positionTaskbarStatus();
+    // Explorer can raise its taskbar after a tab or application switch.
+    // Reassert stacking without activating the chip or stealing keyboard focus.
     taskbarWindow.setAlwaysOnTop(true, 'screen-saver');
     if (!taskbarWindow.isVisible()) taskbarWindow.showInactive();
-    else taskbarWindow.moveTop();
-  }, 250);
+    taskbarWindow.moveTop();
+  }, 750);
 }
 
 function hideTaskbarStatus() {
@@ -1032,6 +1079,7 @@ function createTaskbarStatus() {
     ...getTaskbarStatusBounds(),
     frame: false,
     transparent: true,
+    backgroundMaterial: 'none',
     resizable: false,
     movable: false,
     focusable: false,
@@ -1101,8 +1149,8 @@ app.whenReady().then(() => {
     if (settings.theme === 'system') updateTaskbarTheme();
   });
   registerGlobalShortcut(settings.globalShortcut);
-  applyStartupSetting();
   app.setAppUserModelId('com.codexpulse.desktop');
+  applyStartupSetting();
   createWindow();
   createTray();
   createTaskbarStatus();
@@ -1237,6 +1285,8 @@ app.whenReady().then(() => {
 app.on('window-all-closed', (event) => event.preventDefault());
 app.on('before-quit', () => {
   clearInterval(pollTimer);
+  clearInterval(taskbarStatusTimer);
+  void analyticsWorker?.terminate();
   activityBridge?.stop();
   clearTimeout(positionSaveTimer);
   clearTimeout(historySaveTimer);

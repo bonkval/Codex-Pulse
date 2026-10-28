@@ -1,6 +1,6 @@
 {
   "name": "codex-pulse",
-  "version": "1.5.5",
+  "version": "1.5.9",
   "description": "A quiet desktop usage monitor for Codex.",
   "main": "main.js",
   "author": "Codex Pulse",
@@ -9,6 +9,7 @@
     "start": "electron .",
     "dev": "electron .",
     "test": "node --test",
+    "verify:ui": "electron scripts/verify-ui.cjs",
     "dist": "electron-builder --win"
   },
   "devDependencies": {
@@ -23,6 +24,7 @@
       "main.js",
       "activity-bridge.js",
       "session-analytics.js",
+      "analytics-worker.js",
       "preload.js",
       "taskbar-preload.js",
       "usage-logic.js",

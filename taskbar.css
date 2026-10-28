@@ -1,36 +1,29 @@
 :root {
   color-scheme: light;
-  --taskbar-surface: rgba(248, 247, 244, .96);
-  --taskbar-line: rgba(37, 37, 37, .16);
-  --taskbar-ink: #252525;
-  --taskbar-muted: #686662;
-  --taskbar-accent: #252525;
+  --ink: #191919;
+  --muted: #535353;
+  --divider: rgba(0,0,0,.10);
 }
-
 body[data-theme="dark"] {
   color-scheme: dark;
-  --taskbar-surface: rgba(30, 31, 33, .96);
-  --taskbar-line: rgba(255, 255, 255, .16);
-  --taskbar-ink: #f4f1ec;
-  --taskbar-muted: #a7a49e;
-  --taskbar-accent: #c9c7c1;
+  --ink: #f1f1f1;
+  --muted: #a5a5a5;
+  --divider: rgba(255,255,255,.18);
 }
-
 * { box-sizing: border-box; }
-html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-body { padding: 3px; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent; }
+body { font-family: "Segoe UI Variable", "Segoe UI", sans-serif; }
 .taskbar-status {
-  width: 100%; height: 100%; display: flex; align-items: center; gap: 9px;
-  padding: 0 10px; border: 1px solid var(--taskbar-line); border-radius: 9px;
-  color: var(--taskbar-ink); background: var(--taskbar-surface);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, .28); cursor: pointer; text-align: left;
+  width: 100%; height: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr;
+  align-items: center; padding: 0 5px; border: 0; border-radius: 0;
+  color: var(--ink); text-align: center; cursor: pointer;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
 }
-.taskbar-status:hover { border-color: rgba(37, 37, 37, .3); background: #eeece8; }
-body[data-theme="dark"] .taskbar-status:hover { border-color: rgba(255, 255, 255, .3); background: #292a2c; }
-.taskbar-status:focus-visible { outline: 2px solid var(--taskbar-accent); outline-offset: 1px; }
-.taskbar-icon { width: 21px; height: 21px; display: block; flex: 0 0 auto; transform: translateY(-1px); }
-.status-group { display: grid; min-width: 38px; gap: 1px; }
-.status-label { color: var(--taskbar-muted); font-size: 7px; font-weight: 800; letter-spacing: .05em; line-height: 1; }
-.status-group strong { color: var(--taskbar-ink); font: 800 11px/1 "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
-.today-group { min-width: 58px; }
-.activity-value { min-width: 0; overflow: hidden; margin-left: auto; color: var(--taskbar-muted); font-size: 8px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.taskbar-status:hover strong { color: var(--ink); opacity: .8; }
+.taskbar-status:focus-visible strong { text-decoration: underline; text-underline-offset: 3px; }
+.status-group { position: relative; display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.status-group + .status-group::before { content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: var(--divider); }
+.status-label { color: var(--muted); font-size: 9px; font-weight: 400; line-height: 1; white-space: nowrap; }
+.status-group strong { color: var(--ink); font: 500 15px/1 "Bahnschrift", "Segoe UI Variable", "Segoe UI", sans-serif; font-stretch: semi-condensed; font-variant-numeric: tabular-nums; letter-spacing: .01em; white-space: nowrap; }

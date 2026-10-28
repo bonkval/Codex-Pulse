@@ -2,11 +2,33 @@
 
 Codex Pulse is a lightweight Windows companion for Codex. It stays near your tray and shows your remaining 5-hour and weekly usage, live token activity, and what Codex is currently doing in VS Code.
 
-**Current version: 1.5.5**
+**Current version: 1.5.9**
 
 > **[Download the latest Codex Pulse installer](https://github.com/bonkval/Codex-Pulse/releases/latest/download/Codex-Pulse-Setup.exe)**
 >
 > If the direct download is unavailable, use the [latest GitHub release](https://github.com/bonkval/Codex-Pulse/releases/latest).
+## 1.5.9 changes
+
+- Removes the taskbar background and outline, centers text and separators, and uses Bahnschrift numerals.
+
+## 1.5.8 changes
+
+- Centers the strip vertically within the taskbar and replaces gradient/acrylic backgrounds with a flat black surface.
+
+## 1.5.7 changes
+
+- Redesigns the taskbar strip with neutral black glass, aligned numbers, subtle dividers, and no status dot.
+
+## 1.5.6 changes
+
+- Restores persistent taskbar stacking when switching applications, without stealing focus.
+- Adds a black dashboard with consistent type, rounded edges, and essential numbers first.
+- Keeps existing controls, exports, notifications, themes, activity companion, and statistics available.
+- Fixes live usage bars, low-limit thresholds, missing-value formatting, reconnect chart recovery, popup resizing, and leaving taskbar mode.
+- Moves cached session analytics to a worker so scans do not block the window.
+
+Validation: `npm test` and `npm run verify:ui` (Windows desktop required). UI snapshots are written to `verification/`.
+
 ## Screenshots
 <img width="480" height="700" alt="image" src="https://github.com/user-attachments/assets/2f3f2070-331b-4e09-9209-b290619b5711" />
 <img width="480" height="697" alt="image" src="https://github.com/user-attachments/assets/6cfffe59-432b-482e-bc00-d9fde1337b4d" />
@@ -57,7 +79,7 @@ Codex Pulse does not ask for or store API keys. It uses the existing local Codex
 
 ## Latest release files
 
-For the v1.5.5 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
+For the v1.5.9 GitHub release, the installer is the only file users need for a normal installation. The other files support automatic updates and are optional for first-time users.
 
 - `Codex-Pulse-Setup.exe` — the only required download; use this to install Codex Pulse.
 - `Codex-Pulse-Setup.exe.blockmap` — optional; helps the automatic updater download updates efficiently.

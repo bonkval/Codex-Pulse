@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const MAX_ANALYTICS_FILES = 1000;
+const sessionCache = new Map();
 const MAX_SESSION_FILE_BYTES = 25 * 1024 * 1024;
 
 function safeEntries(directory) {
@@ -145,8 +146,13 @@ function scanSessionAnalytics(root, { retentionDays = 90 } = {}) {
   }).filter((candidate) => candidate && candidate.stat.size <= MAX_SESSION_FILE_BYTES)
     .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs)
     .slice(0, MAX_ANALYTICS_FILES);
+  const activeFiles = new Set(candidates.map(({ filePath }) => filePath));
+  for (const key of sessionCache.keys()) if (!activeFiles.has(key)) sessionCache.delete(key);
   for (const { filePath, stat } of candidates) {
-    const session = parseSession(filePath, stat);
+    const cached = sessionCache.get(filePath);
+    const session = cached && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs
+      ? cached.session : parseSession(filePath, stat);
+    sessionCache.set(filePath, { size: stat.size, mtimeMs: stat.mtimeMs, session });
     if (session) sessions.push(session);
   }
   return aggregate(sessions, Math.max(1, Number(retentionDays) || 90));

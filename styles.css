@@ -51,25 +51,25 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .window-icon { width: 15px; height: 15px; display: inline-grid; flex: 0 0 15px; place-items: center; color: #777572; }
 .window-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.2; }
 .calendar-icon svg { stroke-width: 1.1; }
-.row-value { color: var(--ink); font-family: "Cascadia Mono", Consolas, monospace; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.row-value { color: var(--ink); font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .track { height: 8px; overflow: hidden; background: var(--track); border: 1px solid rgba(37,37,37,.06); border-radius: 20px; }
 .fill { height: 100%; min-width: 0; border-radius: inherit; background: #4e5050; transition: width .7s cubic-bezier(.2,.8,.2,1); }
 .fill-secondary { background: #4e5050; }
 .row-meta { justify-content: space-between; color: var(--faint); font-size: 10px; font-weight: 600; }
-.row-meta span:last-child { color: #74716d; font-family: "Cascadia Mono", Consolas, monospace; font-size: 9px; font-variant-numeric: tabular-nums; }
+.row-meta span:last-child { color: #74716d; font-family: "Segoe UI Variable", "Segoe UI", sans-serif; font-size: 10px; font-variant-numeric: tabular-nums; }
 
 .monitor-section { display: grid; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
 .history-section { position: relative; }
 .compact-section { gap: 8px; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .section-heading h2 { margin: 0; color: var(--ink); font-size: 12px; font-weight: 800; letter-spacing: -.01em; }
-.section-heading > span { color: var(--faint); font: 600 9px "Cascadia Mono", Consolas, monospace; }
+.section-heading > span { color: var(--faint); font: 600 9px "Segoe UI Variable", "Segoe UI", sans-serif; }
 .token-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 6px; }
 .metric { min-width: 0; display: grid; gap: 3px; padding: 8px 6px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-raised); }
-.metric strong { overflow: hidden; color: var(--ink); font: 700 12px "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
-.metric span, .session-grid span { color: var(--faint); font-size: 8px; font-weight: 700; }
+.metric strong { overflow: hidden; color: var(--ink); font: 700 12px "Segoe UI Variable", "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.metric span, .session-grid span { color: var(--faint); font-size: 10px; font-weight: 700; }
 .segmented { display: flex; gap: 3px; padding: 2px; border-radius: 7px; background: var(--accent-soft); }
-.segment-button { min-width: 29px; padding: 3px 6px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font: 700 9px "Cascadia Mono", Consolas, monospace; cursor: pointer; }
+.segment-button { min-width: 29px; padding: 3px 6px; border: 0; border-radius: 5px; color: var(--muted); background: transparent; font: 700 9px "Segoe UI Variable", "Segoe UI", sans-serif; cursor: pointer; }
 .segment-button.active { color: var(--surface); background: var(--accent); }
 .history-chart { height: 132px; display: flex; align-items: stretch; gap: 4px; padding: 8px 5px 0; border-bottom: 1px solid var(--line); }
 .history-column { min-width: 0; height: 100%; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr); }
@@ -80,25 +80,25 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .history-tooltip { position: absolute; z-index: 6; min-width: 92px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); box-shadow: 0 7px 18px rgba(37,37,37,.2); pointer-events: none; transform: translate(-50%, -100%); text-align: center; }
 .history-tooltip.below { transform: translate(-50%, 0); }
 .history-tooltip strong, .history-tooltip span { display: block; white-space: nowrap; }
-.history-tooltip strong { font-size: 9px; font-weight: 800; }
-.history-tooltip span { margin-top: 2px; color: var(--muted); font: 700 9px "Cascadia Mono", Consolas, monospace; }
-.history-stats { display: flex; justify-content: space-between; color: var(--faint); font-size: 9px; font-weight: 600; }
+.history-tooltip strong { font-size: 10px; font-weight: 800; }
+.history-tooltip span { margin-top: 2px; color: var(--muted); font: 700 9px "Segoe UI Variable", "Segoe UI", sans-serif; }
+.history-stats { display: flex; justify-content: space-between; color: var(--faint); font-size: 10px; font-weight: 600; }
 .session-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .session-grid > div { display: grid; gap: 3px; }
-.session-grid strong { color: var(--ink); font: 700 12px "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+.session-grid strong { color: var(--ink); font: 700 12px "Segoe UI Variable", "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
 .forecast-text { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.4; }
-.forecast-detail { margin: 0; color: var(--ink); font: 700 9px/1.35 "Cascadia Mono", Consolas, monospace; }
-.forecast-help { margin: 6px 0 0; color: var(--faint); font-size: 9px; line-height: 1.35; }
+.forecast-detail { margin: 0; color: var(--ink); font: 700 9px/1.35 "Segoe UI Variable", "Segoe UI", sans-serif; }
+.forecast-help { margin: 6px 0 0; color: var(--faint); font-size: 10px; line-height: 1.35; }
 .estimate-badge { color: var(--accent) !important; }
-.account-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 14px; color: var(--faint); font-size: 9px; }
-.account-grid strong { float: right; max-width: 70%; overflow: hidden; color: var(--ink); font: 700 9px "Cascadia Mono", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.account-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px 14px; color: var(--faint); font-size: 10px; }
+.account-grid strong { float: right; max-width: 70%; overflow: hidden; color: var(--ink); font: 700 9px "Segoe UI Variable", "Segoe UI", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .rank-list { display: grid; gap: 6px; }
 .rank-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); }
 .rank-item-main { min-width: 0; display: grid; gap: 3px; }
 .rank-item-name { overflow: hidden; color: var(--ink); font-size: 10px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
-.rank-item-meta { overflow: hidden; color: var(--faint); font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.rank-item-value { color: var(--ink); font: 700 10px "Cascadia Mono", Consolas, monospace; }
-.empty-state { color: var(--faint); font-size: 9px; font-weight: 600; }
+.rank-item-meta { overflow: hidden; color: var(--faint); font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.rank-item-value { color: var(--ink); font: 700 10px "Segoe UI Variable", "Segoe UI", sans-serif; }
+.empty-state { color: var(--faint); font-size: 10px; font-weight: 600; }
 .heatmap { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); grid-auto-rows: 10px; gap: 3px; }
 .heatmap-cell { display: block; min-width: 0; height: 10px; border-radius: 2px; background: var(--accent-soft); }
 .heatmap-cell.level-0 { opacity: .35; }
@@ -106,21 +106,21 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .heatmap-cell.level-2 { opacity: .7; background: #5f946d; }
 .heatmap-cell.level-3 { opacity: .85; background: #3f7e53; }
 .heatmap-cell.level-4 { opacity: 1; background: #245d36; }
-.heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: var(--faint); font-size: 8px; font-weight: 600; }
+.heatmap-legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; color: var(--faint); font-size: 10px; font-weight: 600; }
 .heatmap-legend .heatmap-cell { width: 10px; flex: 0 0 10px; }
 .session-history { display: grid; gap: 6px; max-height: 240px; overflow: hidden; }
 .session-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 7px 8px; border-left: 2px solid var(--accent); background: var(--surface-raised); }
 .session-item[data-status="Complete"] { border-left-color: #4f9b68; }
 .session-item[data-status="Stopped"] { border-left-color: #bd5e52; }
 .session-item-main { min-width: 0; display: grid; gap: 3px; }
-.session-item-project { overflow: hidden; color: var(--ink); font-size: 9px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
-.session-item-meta { overflow: hidden; color: var(--faint); font-size: 8px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-.session-item-value { color: var(--ink); font: 700 9px "Cascadia Mono", Consolas, monospace; text-align: right; }
+.session-item-project { overflow: hidden; color: var(--ink); font-size: 10px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.session-item-meta { overflow: hidden; color: var(--faint); font-size: 10px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.session-item-value { color: var(--ink); font: 700 9px "Segoe UI Variable", "Segoe UI", sans-serif; text-align: right; }
 
 .footer { position: absolute; z-index: 4; right: 22px; bottom: 16px; left: 22px; min-height: 34px; justify-content: space-between; padding-top: 14px; border-top: 1px solid var(--line); }
 .footer-actions { display: flex; align-items: center; gap: 12px; }
 .updated, .footer-actions { height: 18px; }
-.updated { gap: 7px; color: #787672; font-size: 9px; font-weight: 600; line-height: 18px; }
+.updated { gap: 7px; color: #787672; font-size: 10px; font-weight: 600; line-height: 18px; }
 .pulse-ring { width: 7px; height: 7px; border: 1px solid #77736d; border-radius: 50%; }
 .text-button { display: inline-flex; height: 18px; align-items: center; padding: 0; border: 0; color: #686662; background: transparent; font: 600 10px/18px "Segoe UI Variable", "Segoe UI", sans-serif; cursor: pointer; transition: color .18s; }
 .text-button:hover { color: var(--accent); }
@@ -134,7 +134,7 @@ body { font-family: "Segoe UI Variable", "Segoe UI", ui-sans-serif, system-ui, s
 .pet-bubble::after { content: ''; position: absolute; right: 50%; bottom: -7px; width: 12px; height: 12px; border-right: 1px solid rgba(37,37,37,.18); border-bottom: 1px solid rgba(37,37,37,.18); background: var(--surface); transform: translateX(50%) rotate(45deg); }
 .pet-kicker { display: block; color: var(--muted); font: 800 8px/1 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: .13em; text-align: center; }
 .pet-message { display: -webkit-box; width: 100%; overflow: hidden; color: var(--ink); font: 700 13px/1.25 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: -.01em; text-align: center; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.pet-badge { position: absolute; z-index: 3; right: calc(50% - 30px); bottom: 35px; width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid var(--surface); border-radius: 50%; color: #fff; background: #4f9b68; font: 800 10px "Cascadia Mono", Consolas, monospace; box-shadow: 0 3px 8px rgba(37,37,37,.22); }
+.pet-badge { position: absolute; z-index: 3; right: calc(50% - 30px); bottom: 35px; width: 19px; height: 19px; display: grid; place-items: center; border: 2px solid var(--surface); border-radius: 50%; color: #fff; background: #4f9b68; font: 800 10px "Segoe UI Variable", "Segoe UI", sans-serif; box-shadow: 0 3px 8px rgba(37,37,37,.22); }
 body[data-view="mini"][data-pet-expanded="true"] .card { overflow: visible; background: transparent; border: 0; clip-path: none; box-shadow: none; }
 body[data-view="mini"][data-pet-expanded="true"] .card::after { display: none; }
 body[data-view="mini"][data-pet-expanded="true"] .mini-view { display: block; overflow: visible; }
@@ -166,27 +166,27 @@ body[data-view="mini"][data-pet-dragging="true"] .pet-badge { display: none !imp
 .setting-row, .setting-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--ink); cursor: pointer; }
 .setting-row > span, .setting-toggle > span { display: grid; min-width: 0; gap: 3px; }
 .setting-row strong, .setting-toggle strong, .export-settings strong { font-size: 11px; font-weight: 750; }
-.setting-row small, .setting-toggle small, .export-settings small { color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
+.setting-row small, .setting-toggle small, .export-settings small { color: var(--faint); font-size: 10px; font-weight: 600; line-height: 1.3; }
 .setting-row select, .number-input { min-width: 112px; padding: 6px 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font: 600 10px "Segoe UI Variable", "Segoe UI", sans-serif; cursor: pointer; }
 .number-input { width: 112px; min-width: 112px; cursor: text; }
 .shortcut-row { align-items: flex-start; }
 .shortcut-control { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; }
 .shortcut-input { width: 142px; min-width: 0; padding: 6px 7px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface); font: 600 10px "Segoe UI Variable", "Segoe UI", sans-serif; cursor: pointer; }
 .shortcut-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.setting-hint { margin-top: -5px; color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
+.setting-hint { margin-top: -5px; color: var(--faint); font-size: 10px; font-weight: 600; line-height: 1.3; }
 .setting-hint.is-error { color: var(--danger, #b33b36); }
 .settings-subsection, .diagnostics-settings { display: grid; gap: 5px; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .settings-subsection > strong, .diagnostics-settings > strong { font-size: 11px; font-weight: 750; }
-.settings-subsection > small, .diagnostics-settings > small { color: var(--faint); font-size: 9px; font-weight: 600; line-height: 1.3; }
+.settings-subsection > small, .diagnostics-settings > small { color: var(--faint); font-size: 10px; font-weight: 600; line-height: 1.3; }
 .threshold-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 3px; }
-.threshold-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.threshold-grid label { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .threshold-grid label > span { color: var(--ink); font-size: 10px; }
 .threshold-grid label div { display: flex; align-items: center; gap: 4px; }
 .threshold-toggle { width: 13px; height: 13px; margin: 0; accent-color: var(--accent); }
-.time-row { display: flex; gap: 10px; padding: 0 0 5px; color: var(--muted); font-size: 9px; font-weight: 700; }
+.time-row { display: flex; gap: 10px; padding: 0 0 5px; color: var(--muted); font-size: 10px; font-weight: 700; }
 .time-row label { display: flex; align-items: center; gap: 5px; }
 .time-row input { padding: 5px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: var(--surface); font: 600 10px "Segoe UI Variable", "Segoe UI", sans-serif; }
-.diagnostics-result { color: var(--muted); font-size: 9px; line-height: 1.35; white-space: pre-line; }
+.diagnostics-result { color: var(--muted); font-size: 10px; line-height: 1.35; white-space: pre-line; }
 .setting-row select:focus-visible, .number-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .setting-toggle input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--accent); cursor: pointer; }
 .path-row { cursor: default; }
@@ -196,7 +196,7 @@ body[data-view="mini"][data-pet-dragging="true"] .pet-badge { display: none !imp
 .secondary-button { width: 100%; padding: 9px; }
 .export-settings { display: grid; gap: 4px; padding: 9px 0; border-bottom: 1px solid var(--line); }
 .export-settings > div { display: flex; gap: 6px; margin-top: 3px; }
-.update-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; color: var(--faint); font-size: 9px; font-weight: 600; }
+.update-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; color: var(--faint); font-size: 10px; font-weight: 600; }
 
 body[data-view="mini"] .card { padding: 0; border-radius: 14px; border: 0; clip-path: inset(0 round 14px); box-shadow: inset 0 0 0 1px rgba(37,37,37,.14); }
 body[data-view="mini"] .card::after { display: none; }
@@ -232,3 +232,85 @@ body[data-theme="dark"][data-pet-state="done"] .pet-kicker { color: #8fc19b; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Compact dashboard layout. */
+.card { padding: 16px 18px 56px; }
+.eyebrow { letter-spacing: -.02em; font-size: 13px; }
+.logo-mark { width: 30px; height: 30px; border-radius: 9px; }
+.logo-mark svg { width: 23px; height: 23px; }
+.brand-lockup { gap: 8px; }
+.actions { gap: 1px; }
+.icon-button { width: 27px; height: 27px; }
+.dashboard-scroll { top: 66px; left: 18px; right: 13px; bottom: 52px; }
+.usage-stack { grid-template-columns: 1fr 1fr; gap: 18px; }
+.usage-row { gap: 7px; }
+.row-heading { align-items: start; flex-direction: column; gap: 6px; }
+.row-label { font-size: 11px; color: var(--muted); }
+.row-value { font: 600 36px/1.1 "Segoe UI Variable", "Segoe UI", sans-serif; letter-spacing: -.05em; }
+.track { height: 4px; border: 0; }
+.row-meta span:first-child { display: none; }
+.row-meta span:last-child { font: 500 10px "Segoe UI", sans-serif; color: var(--muted); }
+.token-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.metric { padding: 8px 0; background: transparent; border: 0; border-radius: 0; }
+
+.metric strong { font: 600 22px/1.2 "Segoe UI", sans-serif; letter-spacing: -.04em; }
+.metric span, .session-grid span { font-size: 10px; }
+.monitor-section { margin-top: 16px; padding-top: 12px; gap: 8px; }
+#token-range-label, .forecast-help { display: none; }
+.history-chart { height: 82px; }
+.section-heading h2 { font-weight: 600; }
+.usage-details, .advanced-settings { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
+.usage-details summary, .advanced-settings summary { padding: 5px 0; color: var(--muted); font-size: 11px; cursor: pointer; }
+.usage-details summary:focus-visible, .advanced-settings summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.usage-details .monitor-section { margin-top: 8px; }
+.settings-scroll { display: block; }
+.settings-scroll > .setting-row, .settings-scroll > .setting-toggle { min-height: 48px; }
+.setting-row small, .setting-toggle small { display: none; }
+.advanced-settings .setting-row small, .advanced-settings .setting-toggle small { display: block; }
+.settings-panel { padding: 16px 18px 32px; }
+.footer { left: 18px; right: 18px; bottom: 12px; padding-top: 10px; }
+body[data-view="mini"] .card { background: linear-gradient(145deg, rgba(238,246,255,.88), rgba(177,194,211,.70)); box-shadow: inset 0 1px 0 rgba(255,255,255,.8), inset 0 0 0 1px rgba(255,255,255,.4); }
+body[data-theme="dark"][data-view="mini"] .card { background: linear-gradient(145deg, rgba(38,38,38,.96), rgba(8,8,8,.96)); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Shared type and geometry across the dashboard, settings, and floating view. */
+:root { --font-ui: "Segoe UI Variable", "Segoe UI", sans-serif; --radius-window: 16px; }
+body[data-theme="dark"] { --surface: #080808; --surface-raised: #141414; --ink: #f3f3f3; --muted: #b3b3b3; --faint: #949494; --line: rgba(255,255,255,.10); --accent: #dedede; --accent-soft: rgba(255,255,255,.08); --track: #242424; }
+body { font-family: var(--font-ui); }
+button, input, select { font-family: var(--font-ui); }
+.card { border-radius: var(--radius-window); clip-path: inset(0 round var(--radius-window)); box-shadow: none; cursor: default; }
+body[data-theme="dark"] .card { border: 1px solid #303030; box-shadow: none; }
+.card::after { display: none; }
+.topbar { min-height: 34px; }
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.subline { font-size: 11px; font-weight: 400; }
+body[data-theme="dark"] .logo-mark { background: #191919; box-shadow: none; border: 1px solid #333; }
+.row-label, body[data-theme="dark"] .row-label { font-size: 12px; font-weight: 500; color: var(--muted); }
+.row-value { font-size: 38px; font-weight: 500; letter-spacing: -.035em; font-variant-numeric: tabular-nums; }
+.row-meta span:last-child { font-family: var(--font-ui); font-size: 11px; color: var(--muted); }
+.section-heading h2 { font-size: 12px; font-weight: 600; letter-spacing: 0; }
+.section-heading > span { font: 400 10px/1.4 var(--font-ui); }
+.metric strong { font: 500 23px/1.2 var(--font-ui); letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+.metric span, .session-grid span { font-size: 11px; font-weight: 400; color: var(--muted); }
+.session-grid strong { font: 500 16px/1.3 var(--font-ui); font-variant-numeric: tabular-nums; }
+.extra-metrics { display: grid; grid-template-columns: 1fr 1fr; }
+.history-stats { font-size: 10px; color: var(--muted); }
+.history-bar-fill { border-radius: 3px 3px 0 0; }
+.usage-details summary, .advanced-settings summary { font-size: 12px; font-weight: 400; padding: 8px 0; }
+.settings-panel { border-radius: inherit; overflow: hidden; padding-bottom: 24px; }
+.settings-header h2 { font-size: 18px; font-weight: 600; }
+.settings-scroll { height: calc(100% - 48px); margin-top: 10px; }
+.setting-row strong, .setting-toggle strong, .settings-subsection > strong, .export-settings > strong, .diagnostics-settings > strong { font-size: 12px; font-weight: 500; }
+.setting-row select, .number-input, .shortcut-input { font-size: 11px; border-radius: 8px; background: var(--surface-raised); }
+.setting-row small, .setting-toggle small, .export-settings small, .settings-subsection > small, .diagnostics-settings > small, .setting-hint { font-size: 11px; font-weight: 400; line-height: 1.5; }
+.small-button, .secondary-button { font: 500 11px/1.4 var(--font-ui); border-radius: 8px; }
+.text-button, .updated { font: 400 11px/18px var(--font-ui); }
+.footer-actions { gap: 12px; }
+.rank-item-meta, .session-item-meta, .forecast-detail, .account-grid strong { font-family: var(--font-ui); font-size: 11px; font-weight: 400; }
+.forecast-text { font-size: 12px; line-height: 1.5; }
+body[data-compact="true"] #usage-details, body[data-compact="true"] .usage-details:has(#account-title) { display: none; }
+
+/* Keep the live numbers visible before secondary charts. */
+[aria-labelledby="session-title"] { gap: 10px; }
+.history-section { margin-top: 14px; }
+.monitor-section .section-heading > span { max-width: 58%; text-align: right; }
