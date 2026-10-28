@@ -30,6 +30,7 @@ Codex Pulse is a lightweight Windows companion for Codex. It stays near your tra
 Validation: `npm test` and `npm run verify:ui` (Windows desktop required). UI snapshots are written to `verification/`.
 
 ## Screenshots
+<img width="656" height="47" alt="image" src="https://github.com/user-attachments/assets/a088c4f5-d4ed-48e3-ae2d-450637710258" />
 <img width="480" height="700" alt="image" src="https://github.com/user-attachments/assets/2f3f2070-331b-4e09-9209-b290619b5711" />
 <img width="480" height="697" alt="image" src="https://github.com/user-attachments/assets/6cfffe59-432b-482e-bc00-d9fde1337b4d" />
 <img width="477" height="696" alt="image" src="https://github.com/user-attachments/assets/9f55ac41-b2a1-425a-bfb2-efd7c044ab68" />
